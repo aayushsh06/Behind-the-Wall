@@ -39,6 +39,14 @@ variables (see `app/core/config.py`).
 | GET | `/api/walls/{id}/export.json` | record plus photo for re-import |
 | POST | `/api/seed/sample-home` | load the six-wall sample home |
 
+## Sample home photos
+
+`assets/sample/` holds the photos behind the six-wall sample home. The seed in
+`app/services/seed_service.py` maps each wall to an asset file (optionally a crop of
+it) and places markers and calibration corners on real features in that photo. To swap
+a photo, replace the file and reload the sample home; photos are rewritten on every load.
+Supported formats are anything Pillow can open, including JPEG, PNG, and AVIF.
+
 ## Test
 
 ```

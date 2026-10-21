@@ -48,11 +48,37 @@ def test_seed_is_idempotent(client: TestClient) -> None:
         wall = client.get(f"/api/walls/{wall_id}").json()
         if wall["photo_id"]:
             assert wall["calibration"] is not None, wall["label"]
-            assert (
-                any(m["kind"] == "line" for m in wall["markers"]) or wall["label"] == "Closet wall"
-            )
+            assert any(m["kind"] == "line" for m in wall["markers"]), wall["label"]
+            meta = client.get(f"/api/photos/{wall['photo_id']}/meta").json()
+            assert meta["width"] > 200 and meta["height"] > 200, wall["label"]
     thumb = client.get(f"/api/photos/{with_photo[0]['photo_id']}/thumbnail")
     assert thumb.status_code == 200
+
+
+def test_seed_refreshes_replaced_photo(client: TestClient) -> None:
+    """Loading the sample home again rewrites photo bytes, so swapped assets take effect."""
+    from app.api.deps import get_photo_storage
+    from app.core.config import get_settings
+
+    first = client.post("/api/seed/sample-home").json()["wall_ids"]
+    wall = client.get(f"/api/walls/{first[0]}").json()
+    storage = get_photo_storage(get_settings())
+    storage.path_for(wall["photo_id"]).write_bytes(b"corrupted")
+
+    client.post("/api/seed/sample-home")
+    photo = client.get(f"/api/photos/{wall['photo_id']}")
+    assert photo.status_code == 200
+    assert photo.content[:2] == b"\xff\xd8"  # JPEG magic bytes
+
+
+def test_sample_crops_produce_distinct_photos() -> None:
+    from app.services.seed_service import SAMPLE_WALLS, load_sample_image
+
+    by_key = {w.key: w for w in SAMPLE_WALLS}
+    assert by_key["kitchen-stove"].photo and by_key["bath-vanity"].photo
+    stove = load_sample_image(by_key["kitchen-stove"].photo)
+    vanity = load_sample_image(by_key["bath-vanity"].photo)
+    assert stove != vanity
 
 
 def test_html_export_shows_computed_positions_and_lines(
