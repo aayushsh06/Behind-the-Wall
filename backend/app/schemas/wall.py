@@ -4,6 +4,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.schemas.calibration import WallCalibration
 from app.schemas.common import Coverage, Region
 from app.schemas.marker import Marker
 
@@ -17,6 +18,7 @@ class WallBase(BaseModel):
     coverage_note: str = Field(default="", max_length=1000)
     uncovered_region: Region | None = None
     photo_id: str | None = None
+    calibration: WallCalibration | None = None
     markers: list[Marker] = Field(default_factory=list)
     notes: str = Field(default="", max_length=2000)
 
@@ -28,6 +30,8 @@ class WallBase(BaseModel):
             self.uncovered_region = None
         if self.photo_id is None and self.markers:
             raise ValueError("Markers require a photo to be placed on")
+        if self.photo_id is None:
+            self.calibration = None
         return self
 
 

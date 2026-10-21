@@ -12,7 +12,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 class Wall(Base):
@@ -33,6 +33,7 @@ class Wall(Base):
     photo_id: Mapped[str | None] = mapped_column(
         String(32), ForeignKey("photos.id", ondelete="SET NULL"), nullable=True
     )
+    calibration: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     markers: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 

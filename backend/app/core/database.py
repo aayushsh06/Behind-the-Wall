@@ -27,8 +27,10 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False
 def init_db() -> None:
     """Create tables that do not exist yet. Import models so they register on Base."""
     import app.models  # noqa: F401
+    from app.core.migrations import ensure_columns
 
     Base.metadata.create_all(bind=engine)
+    ensure_columns(engine)
 
 
 def get_session() -> Generator[Session, None, None]:

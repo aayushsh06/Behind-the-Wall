@@ -15,9 +15,10 @@ def test_html_export_is_self_contained(client: TestClient, uploaded_photo: dict)
     assert "Test Plumber" in html
     assert "18 in above floor" in html
     assert "Entire wall documented" in html
-    assert 'inline; filename="behind-the-wall-kitchen-wall-behind-sink.html"' in response.headers[
-        "content-disposition"
-    ]
+    assert (
+        'inline; filename="behind-the-wall-kitchen-wall-behind-sink.html"'
+        in response.headers["content-disposition"]
+    )
 
     download = client.get(f"/api/walls/{wall['id']}/export.html?download=true")
     assert download.headers["content-disposition"].startswith("attachment;")

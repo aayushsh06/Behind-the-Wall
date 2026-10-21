@@ -7,7 +7,7 @@ def test_create_read_update_delete_wall(client: TestClient, uploaded_photo: dict
     created = client.post("/api/walls", json=wall_payload(uploaded_photo["id"]))
     assert created.status_code == 201, created.text
     wall = created.json()
-    assert wall["schema_version"] == 1
+    assert wall["schema_version"] == 2
     assert len(wall["markers"]) == 1
     assert wall["markers"][0]["id"]
 
@@ -65,3 +65,40 @@ def test_records_survive_new_session(client: TestClient, uploaded_photo: dict) -
         assert again == wall
         photo = reopened.get(f"/api/photos/{uploaded_photo['id']}")
         assert photo.status_code == 200
+
+
+def test_calibration_and_line_markers_round_trip(client: TestClient, uploaded_photo: dict) -> None:
+    calibration = {
+        "top_left": {"x": 0.1, "y": 0.1},
+        "bottom_right": {"x": 0.9, "y": 0.9},
+        "width": 120,
+        "height": 96,
+        "unit": "in",
+    }
+    line = {
+        "type": "wire",
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.5,
+        "x2": 0.9,
+        "y2": 0.5,
+        "measurement": "",
+    }
+    payload = wall_payload(uploaded_photo["id"], calibration=calibration, markers=[line])
+    created = client.post("/api/walls", json=payload)
+    assert created.status_code == 201, created.text
+    wall = created.json()
+    assert wall["calibration"] == calibration
+    assert wall["markers"][0]["kind"] == "line"
+    assert wall["markers"][0]["x2"] == 0.9
+
+
+def test_calibration_dropped_without_photo(client: TestClient) -> None:
+    calibration = {
+        "top_left": {"x": 0.1, "y": 0.1},
+        "bottom_right": {"x": 0.9, "y": 0.9},
+        "width": 120,
+        "height": 96,
+    }
+    wall = client.post("/api/walls", json=wall_payload(None, calibration=calibration)).json()
+    assert wall["calibration"] is None

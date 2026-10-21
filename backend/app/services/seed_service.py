@@ -82,8 +82,7 @@ SAMPLE_WALLS: tuple[SampleWall, ...] = (
         observed_date=date(2025, 11, 12),
         coverage=Coverage.PARTIAL,
         coverage_note=(
-            "Only the lower 3 ft was opened for the range outlet. "
-            "Upper section not inspected."
+            "Only the lower 3 ft was opened for the range outlet. Upper section not inspected."
         ),
         uncovered_region=Region(x=0.0, y=0.0, width=1.0, height=0.5),
         markers=(

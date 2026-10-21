@@ -20,6 +20,18 @@ class Coverage(StrEnum):
     NONE = "none"
 
 
+class LengthUnit(StrEnum):
+    INCH = "in"
+    CENTIMETER = "cm"
+
+
+class Point(BaseModel):
+    """A position in normalized photo coordinates (0..1)."""
+
+    x: float = Field(ge=0, le=1)
+    y: float = Field(ge=0, le=1)
+
+
 class Region(BaseModel):
     """Axis-aligned rectangle in normalized photo coordinates (0..1)."""
 

@@ -36,9 +36,7 @@ def jpeg_bytes() -> bytes:
 
 @pytest.fixture
 def uploaded_photo(client: TestClient, jpeg_bytes: bytes) -> dict:
-    response = client.post(
-        "/api/photos", files={"file": ("wall.jpg", jpeg_bytes, "image/jpeg")}
-    )
+    response = client.post("/api/photos", files={"file": ("wall.jpg", jpeg_bytes, "image/jpeg")})
     assert response.status_code == 201, response.text
     return response.json()
 
