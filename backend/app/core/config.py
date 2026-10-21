@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     data_dir: Path = BACKEND_ROOT / "data"
     database_url: str | None = None
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    # Built frontend to serve from this process when present (see app/spa.py).
+    frontend_dist: Path = BACKEND_ROOT.parent / "frontend" / "dist"
 
     # Photos are resized so the longest edge is at most this many pixels.
     photo_max_edge: int = 1600

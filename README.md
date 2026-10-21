@@ -1,24 +1,54 @@
 # Behind the Wall
 
-A small prototype for recording what is inside a home's walls (pipes, wires, framing)
-so that a tradesperson can capture a wall, a homeowner can find it later, and the
-homeowner can hand the record to someone else.
+A prototype for recording what is inside a home's walls (pipes, wires, framing) so a
+tradesperson can capture a wall while it is open, a homeowner can find it later, and
+the homeowner can hand that single record to someone else.
 
 ## Layout
 
 ```
-backend/   FastAPI service: wall records, photos, single-wall export
-frontend/  React + TypeScript (Vite) mobile-first client
-scripts/   Developer tooling (run both services with one command)
+backend/   FastAPI + SQLite: wall records, photo storage, single-wall export
+frontend/  React + TypeScript (Vite, Tailwind): mobile-first client
+scripts/   dev.sh (both services, live reload) and serve.sh (single-process deploy)
 ```
 
 ## Quick start
 
 ```
-./scripts/dev.sh
+./scripts/dev.sh          # API on :8000, web on :5173, Ctrl+C stops both
+./scripts/dev.sh --lan    # also reachable from a phone on the same Wi-Fi
 ```
 
-This installs dependencies on first run, starts the API on http://localhost:8000
-and the web app on http://localhost:5173, and stops both on Ctrl+C.
+Dependencies install on first run (Python venv under `backend/.venv`, `node_modules`
+under `frontend/`). Open http://localhost:5173 and tap **Load sample home** to get the
+six-wall test home.
+
+## Deploy shape
+
+```
+./scripts/serve.sh        # builds the frontend, serves app + API from one uvicorn on :8000
+```
+
+FastAPI serves the built frontend when `frontend/dist` exists. Data lives in
+`backend/data/` (SQLite file plus JPEG photos); back that directory up to keep records.
+
+## Checks
+
+```
+make test    # backend pytest + frontend typecheck
+make lint    # ruff + oxlint
+make build   # production frontend build
+```
+
+## Flows
+
+| Flow | Screen | Requirement |
+|---|---|---|
+| Find a wall | Wall list grouped by room with search | R1 |
+| See what is unknown | Coverage banner + hatched "not inspected" region | R2 |
+| Read a record | Wall detail: numbered pins, items table, author, date | R3 |
+| Record a wall | Photo → details → tap-to-place items | R4 |
+| Hand off | Share sheet exports one wall as self-contained HTML or JSON | R5 |
+| Keep records | Stored server-side in SQLite + disk | R6 |
 
 See `backend/README.md` and `frontend/README.md` for per-service details.

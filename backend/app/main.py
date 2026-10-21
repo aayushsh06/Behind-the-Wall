@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.database import init_db
+from app.spa import mount_spa
 
 
 @asynccontextmanager
@@ -26,6 +27,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(api_router)
+    mount_spa(app, settings.frontend_dist)
     return app
 
 
