@@ -47,7 +47,8 @@ make build   # production frontend build
 | Find a wall | Wall list grouped by room with search | R1 |
 | See what is unknown | Coverage banner + hatched "not inspected" region | R2 |
 | Read a record | Wall detail: numbered pins, items table, author, date | R3 |
-| Record a wall | Photo → details → tap-to-place items | R4 |
+| Record a wall | Photo → wall size → details → tap-to-place items (points or line runs) | R4 |
+| Compute positions | Drag two corner handles onto the wall and enter its size; every item's position is computed from the photo | R3, R4 |
 | Hand off | Share sheet exports one wall as self-contained HTML or JSON | R5 |
 | Keep records | Stored server-side in SQLite + disk | R6 |
 
