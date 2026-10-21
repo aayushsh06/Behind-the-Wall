@@ -51,8 +51,16 @@ def test_format_length_inches_and_cm() -> None:
 def test_describe_marker(calibration: WallCalibration) -> None:
     point = Marker(type=UtilityType.PIPE, x=0.5, y=0.5)
     assert describe_marker(point, calibration) == "5 ft 0 in from left, 4 ft 0 in above floor"
-    line = Marker(type=UtilityType.WIRE, kind="line", x=0.1, y=0.9, x2=0.9, y2=0.9)
-    assert describe_marker(line, calibration).startswith("10 ft 0 in long, from (0 in from left")
+    horizontal = Marker(type=UtilityType.WIRE, kind="line", x=0.1, y=0.9, x2=0.9, y2=0.9)
+    assert describe_marker(horizontal, calibration) == (
+        "Horizontal run, 10 ft 0 in long, 0 in above floor, from 0 in to 10 ft 0 in from left"
+    )
+    vertical = Marker(type=UtilityType.PIPE, kind="line", x=0.5, y=0.9, x2=0.5, y2=0.5)
+    assert describe_marker(vertical, calibration) == (
+        "Vertical run, 4 ft 0 in long, 5 ft 0 in from left, from 0 in to 4 ft 0 in above floor"
+    )
+    diagonal = Marker(type=UtilityType.OTHER, kind="line", x=0.1, y=0.9, x2=0.9, y2=0.1)
+    assert describe_marker(diagonal, calibration).endswith("above floor)")
     assert describe_marker(point, None) is None
 
 

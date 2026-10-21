@@ -44,9 +44,13 @@ def test_seed_is_idempotent(client: TestClient) -> None:
     assert coverages == ["full", "full", "full", "none", "partial", "partial"]
     with_photo = [walls[i] for i in first if walls[i]["photo_id"]]
     assert len(with_photo) == 5
-    sink = client.get(f"/api/walls/{first[0]}").json()
-    assert sink["calibration"]["width"] == 144
-    assert any(m["kind"] == "line" for m in sink["markers"])
+    for wall_id in first:
+        wall = client.get(f"/api/walls/{wall_id}").json()
+        if wall["photo_id"]:
+            assert wall["calibration"] is not None, wall["label"]
+            assert (
+                any(m["kind"] == "line" for m in wall["markers"]) or wall["label"] == "Closet wall"
+            )
     thumb = client.get(f"/api/photos/{with_photo[0]['photo_id']}/thumbnail")
     assert thumb.status_code == 200
 
@@ -80,5 +84,5 @@ def test_html_export_shows_computed_positions_and_lines(
     html = client.get(f"/api/walls/{wall['id']}/export.html").text
     assert "Wall 10 ft 0 in wide" in html
     assert "5 ft 0 in from left, 4 ft 0 in above floor" in html
-    assert "10 ft 0 in long" in html
+    assert "Horizontal run, 10 ft 0 in long" in html
     assert 'class="seg"' in html

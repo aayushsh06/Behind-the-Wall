@@ -10,6 +10,9 @@ from math import hypot
 
 from app.schemas import LengthUnit, Marker, MarkerKind, WallCalibration
 
+# A run whose endpoints differ by less than this along an axis is reported as straight.
+STRAIGHT_TOLERANCE = {LengthUnit.INCH: 1.0, LengthUnit.CENTIMETER: 2.5}
+
 
 @dataclass(frozen=True)
 class PhysicalPoint:
@@ -69,10 +72,28 @@ def describe_point(point: PhysicalPoint) -> str:
 
 
 def describe_line(line: PhysicalLine) -> str:
-    return (
-        f"{format_length(line.length, line.unit)} long, "
-        f"from ({describe_point(line.start)}) to ({describe_point(line.end)})"
-    )
+    """Compact wording for vertical and horizontal runs, full endpoints otherwise."""
+    unit = line.unit
+    tolerance = STRAIGHT_TOLERANCE[unit]
+    dx = abs(line.end.from_left - line.start.from_left)
+    dy = abs(line.end.from_floor - line.start.from_floor)
+    length = format_length(line.length, unit)
+
+    if dx <= tolerance:
+        at = format_length((line.start.from_left + line.end.from_left) / 2, unit)
+        lo, hi = sorted((line.start.from_floor, line.end.from_floor))
+        return (
+            f"Vertical run, {length} long, {at} from left, "
+            f"from {format_length(lo, unit)} to {format_length(hi, unit)} above floor"
+        )
+    if dy <= tolerance:
+        at = format_length((line.start.from_floor + line.end.from_floor) / 2, unit)
+        lo, hi = sorted((line.start.from_left, line.end.from_left))
+        return (
+            f"Horizontal run, {length} long, {at} above floor, "
+            f"from {format_length(lo, unit)} to {format_length(hi, unit)} from left"
+        )
+    return f"{length} long, from ({describe_point(line.start)}) to ({describe_point(line.end)})"
 
 
 def describe_marker(marker: Marker, calibration: WallCalibration | None) -> str | None:

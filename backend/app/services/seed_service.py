@@ -141,21 +141,18 @@ SAMPLE_WALLS: tuple[SampleWall, ...] = (
         ),
         uncovered_region=Region(x=0.0, y=0.0, width=1.0, height=0.5),
         markers=(
-            _m(
-                UtilityType.WIRE,
-                0.35,
-                0.80,
-                "6/3 range circuit, 12 in above floor",
-                "Left stud bay",
-            ),
-            _m(
+            _line(UtilityType.WIRE, 0.05, 0.80, 0.35, 0.80, "6/3 range circuit", "Left stud bay"),
+            _line(
                 UtilityType.FRAMING,
                 0.52,
-                0.75,
-                "Stud at 16 in o.c., 48 in from corner",
+                0.93,
+                0.52,
+                0.50,
+                "Stud at 16 in o.c.",
                 "From left corner",
             ),
         ),
+        size=(120, 96),
     ),
     SampleWall(
         key="bath-vanity",
@@ -165,8 +162,8 @@ SAMPLE_WALLS: tuple[SampleWall, ...] = (
         observed_date=date(2026, 1, 20),
         coverage=Coverage.FULL,
         markers=(
-            _m(UtilityType.PIPE, 0.40, 0.60, 'Hot 1/2" PEX, 20 in above floor', "Left of drain"),
-            _m(UtilityType.PIPE, 0.60, 0.60, 'Cold 1/2" PEX, 20 in above floor', "Right of drain"),
+            _line(UtilityType.PIPE, 0.40, 0.93, 0.40, 0.60, 'Hot 1/2" PEX', "Left of drain"),
+            _line(UtilityType.PIPE, 0.60, 0.93, 0.60, 0.60, 'Cold 1/2" PEX', "Right of drain"),
             _m(UtilityType.PIPE, 0.50, 0.78, '1-1/2" drain, 14 in above floor', "Vanity center"),
             _m(
                 UtilityType.WIRE,
@@ -176,6 +173,7 @@ SAMPLE_WALLS: tuple[SampleWall, ...] = (
                 "Right of mirror",
             ),
         ),
+        size=(72, 96),
     ),
     SampleWall(
         key="living-tv",
@@ -189,16 +187,13 @@ SAMPLE_WALLS: tuple[SampleWall, ...] = (
         ),
         uncovered_region=Region(x=0.0, y=0.0, width=0.62, height=1.0),
         markers=(
-            _m(UtilityType.FRAMING, 0.66, 0.50, "Stud, 64 in from left corner", "From left corner"),
-            _m(UtilityType.FRAMING, 0.90, 0.50, "Stud, 80 in from left corner", "From left corner"),
-            _m(
-                UtilityType.WIRE,
-                0.78,
-                0.40,
-                "Low-voltage HDMI run, no line voltage seen",
-                "Between studs",
+            _line(UtilityType.FRAMING, 0.66, 0.93, 0.66, 0.0, "Stud", "From left corner"),
+            _line(UtilityType.FRAMING, 0.90, 0.93, 0.90, 0.0, "Stud", "From left corner"),
+            _line(
+                UtilityType.WIRE, 0.78, 0.70, 0.78, 0.25, "Low-voltage HDMI run", "Between studs"
             ),
         ),
+        size=(168, 96),
     ),
     SampleWall(
         key="bedroom-closet",
