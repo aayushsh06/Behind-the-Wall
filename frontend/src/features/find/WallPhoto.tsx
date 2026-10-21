@@ -1,7 +1,7 @@
 import { photosApi } from '@/api/photos'
 import { PhotoCanvas } from '@/components/photo'
 import { Spinner } from '@/components/ui'
-import type { Marker, Region } from '@/domain/types'
+import type { Marker, Region, WallCalibration } from '@/domain/types'
 import { usePhoto } from '@/hooks/usePhoto'
 
 interface WallPhotoProps {
@@ -9,6 +9,7 @@ interface WallPhotoProps {
   alt: string
   markers: Marker[]
   uncoveredRegion: Region | null
+  calibration: WallCalibration | null
   selectedMarkerId: string | null
   onSelectMarker: (id: string) => void
 }
@@ -19,6 +20,7 @@ export function WallPhoto({
   alt,
   markers,
   uncoveredRegion,
+  calibration,
   selectedMarkerId,
   onSelectMarker,
 }: WallPhotoProps) {
@@ -32,6 +34,7 @@ export function WallPhoto({
       aspectRatio={photo.data.width / photo.data.height}
       markers={markers}
       uncoveredRegion={uncoveredRegion}
+      calibration={calibration}
       selectedMarkerId={selectedMarkerId}
       onSelectMarker={onSelectMarker}
     />

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 
 import { routes } from '@/app/routes'
 import { ErrorMessage, PageHeader, Spinner } from '@/components/ui'
+import { describeWallSize } from '@/domain/geometry'
 import { CoverageBanner } from '@/features/find/CoverageBanner'
 import { MarkerList } from '@/features/find/MarkerList'
 import { WallActions } from '@/features/find/WallActions'
@@ -39,16 +40,32 @@ export function WallDetailPage() {
             alt={`${wall.room} ${wall.label}`}
             markers={wall.markers}
             uncoveredRegion={wall.uncovered_region}
+            calibration={wall.calibration}
             selectedMarkerId={selectedMarkerId}
             onSelectMarker={toggleMarker}
           />
         ) : null}
 
         <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-stone-500">
-            Items ({wall.markers.length})
-          </h2>
-          <MarkerList markers={wall.markers} selectedId={selectedMarkerId} onSelect={toggleMarker} />
+          <div className="mb-2 flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
+              Items ({wall.markers.length})
+            </h2>
+            <span className="text-xs text-stone-500">
+              {wall.calibration ? `Wall ${describeWallSize(wall.calibration)}` : 'Wall size not recorded'}
+            </span>
+          </div>
+          <MarkerList
+            markers={wall.markers}
+            calibration={wall.calibration}
+            selectedId={selectedMarkerId}
+            onSelect={toggleMarker}
+          />
+          {wall.calibration ? (
+            <p className="mt-2 text-xs text-stone-500">
+              Positions are computed from the wall corners marked in the photo and are approximate.
+            </p>
+          ) : null}
         </section>
 
         {wall.notes ? (
