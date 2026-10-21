@@ -37,6 +37,7 @@ export function WallDetailPage() {
         {wall.photo_id ? (
           <WallPhoto
             photoId={wall.photo_id}
+            version={wall.updated_at}
             alt={`${wall.room} ${wall.label}`}
             markers={wall.markers}
             uncoveredRegion={wall.uncovered_region}

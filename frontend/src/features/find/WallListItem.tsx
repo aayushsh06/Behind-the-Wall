@@ -22,7 +22,7 @@ export function WallListItem({ wall }: WallListItemProps) {
         <div className="size-16 shrink-0 overflow-hidden rounded-xl bg-stone-200">
           {wall.photo_id ? (
             <img
-              src={photosApi.thumbnailUrl(wall.photo_id)}
+              src={photosApi.thumbnailUrl(wall.photo_id, wall.updated_at)}
               alt=""
               loading="lazy"
               className="size-full object-cover"

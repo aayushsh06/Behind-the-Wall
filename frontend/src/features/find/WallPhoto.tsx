@@ -6,6 +6,8 @@ import { usePhoto } from '@/hooks/usePhoto'
 
 interface WallPhotoProps {
   photoId: string
+  /** Owning record's updated_at; changes whenever the photo could have been rewritten. */
+  version: string
   alt: string
   markers: Marker[]
   uncoveredRegion: Region | null
@@ -17,6 +19,7 @@ interface WallPhotoProps {
 /** Read-only photo with pins; loads the photo dimensions so the box is stable before paint. */
 export function WallPhoto({
   photoId,
+  version,
   alt,
   markers,
   uncoveredRegion,
@@ -29,7 +32,7 @@ export function WallPhoto({
 
   return (
     <PhotoCanvas
-      src={photosApi.url(photoId)}
+      src={photosApi.url(photoId, version)}
       alt={alt}
       aspectRatio={photo.data.width / photo.data.height}
       markers={markers}

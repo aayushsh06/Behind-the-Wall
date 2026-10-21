@@ -29,7 +29,7 @@ export function EditWallPage() {
     <>
       <PageHeader title="Edit wall" subtitle={`${wall.room} · ${wall.label}`} backTo={routes.wall(wall.id)} />
       <WallForm
-        initialDraft={draftFromWall(wall, photosApi.url, size)}
+        initialDraft={draftFromWall(wall, (id) => photosApi.url(id, wall.updated_at), size)}
         knownRooms={knownRooms}
         submitLabel="Save changes"
         submitting={updateWall.isPending}
