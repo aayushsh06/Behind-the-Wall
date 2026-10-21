@@ -23,6 +23,9 @@
   .pin-pipe { fill: #1f6feb; } .pin-wire { fill: #d4a017; } .pin-framing { fill: #8b5a2b; } .pin-other { fill: #6b6b6b; }
   .unknown { fill: url(#hatch); stroke: #b45309; stroke-width: 0.4; }
   .unknown-label { font: 700 3px system-ui, sans-serif; fill: #7a4d00; }
+  .wall-outline { fill: none; stroke: #ffffff; stroke-width: 0.5; stroke-dasharray: 1.5 1; opacity: 0.8; }
+  .seg { stroke-width: 1.4; stroke-linecap: round; }
+  .seg-halo { stroke: #fff; stroke-width: 2.4; stroke-linecap: round; opacity: 0.9; }
   table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e6e6e6; vertical-align: top; }
   th { background: #f0f0f0; font-size: 13px; }
@@ -37,6 +40,7 @@
   <p class="meta">
     <span>Recorded by <strong>{{ wall.author }}</strong></span>
     <span>Observed {{ wall.observed_date.isoformat() }}</span>
+    {% if wall_size %}<span>Wall {{ wall_size }}</span>{% endif %}
   </p>
 
   <div class="banner {{ wall.coverage.value }}">{{ coverage_label }}</div>
@@ -59,9 +63,21 @@
           <rect class="unknown" x="{{ r.x * 100 }}" y="{{ r.y * 100 * aspect }}" width="{{ r.width * 100 }}" height="{{ r.height * 100 * aspect }}"/>
           <text class="unknown-label" x="{{ (r.x + r.width / 2) * 100 }}" y="{{ (r.y + r.height / 2) * 100 * aspect }}" text-anchor="middle">NOT INSPECTED</text>
         {% endif %}
+        {% if wall.calibration %}
+          {% set c = wall.calibration %}
+          <rect class="wall-outline" x="{{ c.top_left.x * 100 }}" y="{{ c.top_left.y * 100 * aspect }}" width="{{ (c.bottom_right.x - c.top_left.x) * 100 }}" height="{{ (c.bottom_right.y - c.top_left.y) * 100 * aspect }}"/>
+        {% endif %}
         {% for m in markers %}
-          <circle class="pin-{{ m.type }}" cx="{{ m.x * 100 }}" cy="{{ m.y * 100 * aspect }}" r="2.6" stroke="#fff" stroke-width="0.4"/>
-          <text class="pin" x="{{ m.x * 100 }}" y="{{ m.y * 100 * aspect }}">{{ m.index }}</text>
+          {% if m.is_line %}
+            <line class="seg-halo" x1="{{ m.x * 100 }}" y1="{{ m.y * 100 * aspect }}" x2="{{ m.x2 * 100 }}" y2="{{ m.y2 * 100 * aspect }}"/>
+            <line class="seg" stroke="{{ utility_colors[m.type] }}" x1="{{ m.x * 100 }}" y1="{{ m.y * 100 * aspect }}" x2="{{ m.x2 * 100 }}" y2="{{ m.y2 * 100 * aspect }}"/>
+            {% set mx = (m.x + m.x2) / 2 %}{% set my = (m.y + m.y2) / 2 %}
+            <circle class="pin-{{ m.type }}" cx="{{ mx * 100 }}" cy="{{ my * 100 * aspect }}" r="2.6" stroke="#fff" stroke-width="0.4"/>
+            <text class="pin" x="{{ mx * 100 }}" y="{{ my * 100 * aspect }}">{{ m.index }}</text>
+          {% else %}
+            <circle class="pin-{{ m.type }}" cx="{{ m.x * 100 }}" cy="{{ m.y * 100 * aspect }}" r="2.6" stroke="#fff" stroke-width="0.4"/>
+            <text class="pin" x="{{ m.x * 100 }}" y="{{ m.y * 100 * aspect }}">{{ m.index }}</text>
+          {% endif %}
         {% endfor %}
       </svg>
     </div>
@@ -70,12 +86,13 @@
 
   {% if markers %}
   <table>
-    <thead><tr><th>#</th><th>Type</th><th>Measurement</th><th>Reference point</th><th>Note</th></tr></thead>
+    <thead><tr><th>#</th><th>Type</th>{% if wall_size %}<th>Computed position</th>{% endif %}<th>Measurement</th><th>Reference point</th><th>Note</th></tr></thead>
     <tbody>
     {% for m in markers %}
       <tr>
-        <td><span class="num pin-{{ m.type }}" style="background: {{ {'pipe':'#1f6feb','wire':'#d4a017','framing':'#8b5a2b','other':'#6b6b6b'}[m.type] }}">{{ m.index }}</span></td>
-        <td>{{ m.type_label }}</td>
+        <td><span class="num" style="background: {{ utility_colors[m.type] }}">{{ m.index }}</span></td>
+        <td>{{ m.type_label }}{% if m.is_line %} (run){% endif %}</td>
+        {% if wall_size %}<td>{{ m.position }}</td>{% endif %}
         <td>{{ m.measurement }}</td>
         <td>{{ m.reference_point }}</td>
         <td>{{ m.note }}</td>
@@ -94,7 +111,8 @@
 
   <footer>
     Behind the Wall record · ID {{ wall.id }} · Last updated {{ wall.updated_at.strftime('%Y-%m-%d %H:%M') }}.
-    This record describes what was observed on the date above. Verify on site before cutting or drilling.
+    This record describes what was observed on the date above. Computed positions assume a straight-on photo and
+    are approximate. Verify on site before cutting or drilling.
   </footer>
 </main>
 </body>

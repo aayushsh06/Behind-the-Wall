@@ -44,5 +44,41 @@ def test_seed_is_idempotent(client: TestClient) -> None:
     assert coverages == ["full", "full", "full", "none", "partial", "partial"]
     with_photo = [walls[i] for i in first if walls[i]["photo_id"]]
     assert len(with_photo) == 5
+    sink = client.get(f"/api/walls/{first[0]}").json()
+    assert sink["calibration"]["width"] == 144
+    assert any(m["kind"] == "line" for m in sink["markers"])
     thumb = client.get(f"/api/photos/{with_photo[0]['photo_id']}/thumbnail")
     assert thumb.status_code == 200
+
+
+def test_html_export_shows_computed_positions_and_lines(
+    client: TestClient, uploaded_photo: dict
+) -> None:
+    calibration = {
+        "top_left": {"x": 0.0, "y": 0.0},
+        "bottom_right": {"x": 1.0, "y": 1.0},
+        "width": 120,
+        "height": 96,
+        "unit": "in",
+    }
+    markers = [
+        {"type": "pipe", "kind": "point", "x": 0.5, "y": 0.5, "measurement": ""},
+        {
+            "type": "wire",
+            "kind": "line",
+            "x": 0.0,
+            "y": 0.75,
+            "x2": 1.0,
+            "y2": 0.75,
+            "measurement": "",
+        },
+    ]
+    wall = client.post(
+        "/api/walls",
+        json=wall_payload(uploaded_photo["id"], calibration=calibration, markers=markers),
+    ).json()
+    html = client.get(f"/api/walls/{wall['id']}/export.html").text
+    assert "Wall 10 ft 0 in wide" in html
+    assert "5 ft 0 in from left, 4 ft 0 in above floor" in html
+    assert "10 ft 0 in long" in html
+    assert 'class="seg"' in html

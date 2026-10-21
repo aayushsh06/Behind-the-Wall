@@ -13,7 +13,8 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from app.models import Photo, Wall
-from app.schemas import WallRead
+from app.schemas import MarkerKind, WallRead
+from app.services.geometry import describe_marker, describe_wall_size
 from app.services.photo_storage import JPEG_CONTENT_TYPE
 
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
@@ -24,6 +25,12 @@ UTILITY_LABELS = {
     "wire": "Wire",
     "framing": "Framing",
     "other": "Other",
+}
+UTILITY_COLORS = {
+    "pipe": "#1f6feb",
+    "wire": "#d4a017",
+    "framing": "#8b5a2b",
+    "other": "#6b6b6b",
 }
 COVERAGE_LABELS = {
     "full": "Entire wall documented",
@@ -54,9 +61,17 @@ class ExportService:
             photo=photo,
             photo_data_uri=self._data_uri(photo_bytes),
             coverage_label=COVERAGE_LABELS[record.coverage.value],
+            wall_size=describe_wall_size(record.calibration) if record.calibration else None,
             utility_labels=UTILITY_LABELS,
+            utility_colors=UTILITY_COLORS,
             markers=[
-                m.model_dump() | {"index": i + 1, "type_label": UTILITY_LABELS[m.type.value]}
+                m.model_dump()
+                | {
+                    "index": i + 1,
+                    "type_label": UTILITY_LABELS[m.type.value],
+                    "is_line": m.kind is MarkerKind.LINE,
+                    "position": describe_marker(m, record.calibration),
+                }
                 for i, m in enumerate(record.markers)
             ],
         )

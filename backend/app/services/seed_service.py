@@ -14,7 +14,17 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from app.repositories import PhotoRepository, WallRepository
-from app.schemas import Coverage, Marker, Region, UtilityType, WallCreate
+from app.schemas import (
+    Coverage,
+    LengthUnit,
+    Marker,
+    MarkerKind,
+    Point,
+    Region,
+    UtilityType,
+    WallCalibration,
+    WallCreate,
+)
 from app.services.photo_storage import JPEG_CONTENT_TYPE, PhotoStorage
 
 SAMPLE_ASSETS_DIR = Path(__file__).resolve().parent.parent.parent / "assets" / "sample"
@@ -33,6 +43,8 @@ class SampleWall:
     uncovered_region: Region | None = None
     markers: tuple[Marker, ...] = ()
     notes: str = ""
+    # Real wall size; corners default to the placeholder image's drawn wall area.
+    size: tuple[float, float] | None = None
 
     @property
     def wall_id(self) -> str:
@@ -43,8 +55,48 @@ class SampleWall:
         return f"{SAMPLE_PREFIX}photo{self.key:0>21}"[:32]
 
 
+# Where the wall sits inside the generated placeholder photo (see _render_placeholder).
+PLACEHOLDER_TOP_LEFT = Point(x=0.0, y=0.0)
+PLACEHOLDER_BOTTOM_RIGHT = Point(x=1.0, y=0.933)
+
+
 def _m(kind: UtilityType, x: float, y: float, measurement: str, ref: str, note: str = "") -> Marker:
     return Marker(type=kind, x=x, y=y, measurement=measurement, reference_point=ref, note=note)
+
+
+def _line(
+    kind: UtilityType,
+    x: float,
+    y: float,
+    x2: float,
+    y2: float,
+    measurement: str,
+    ref: str,
+    note: str = "",
+) -> Marker:
+    return Marker(
+        type=kind,
+        kind=MarkerKind.LINE,
+        x=x,
+        y=y,
+        x2=x2,
+        y2=y2,
+        measurement=measurement,
+        reference_point=ref,
+        note=note,
+    )
+
+
+def _calibration(size: tuple[float, float] | None) -> WallCalibration | None:
+    if size is None:
+        return None
+    return WallCalibration(
+        top_left=PLACEHOLDER_TOP_LEFT,
+        bottom_right=PLACEHOLDER_BOTTOM_RIGHT,
+        width=size[0],
+        height=size[1],
+        unit=LengthUnit.INCH,
+    )
 
 
 SAMPLE_WALLS: tuple[SampleWall, ...] = (
@@ -56,14 +108,16 @@ SAMPLE_WALLS: tuple[SampleWall, ...] = (
         observed_date=date(2026, 3, 4),
         coverage=Coverage.FULL,
         markers=(
-            _m(
+            _line(
                 UtilityType.PIPE,
                 0.42,
-                0.55,
-                '1/2" copper supply, 18 in above floor',
+                0.93,
+                0.42,
+                0.45,
+                '1/2" copper supply riser',
                 "Left of sink drain",
             ),
-            _m(UtilityType.PIPE, 0.50, 0.70, '2" PVC drain, centered on sink', "Sink centerline"),
+            _line(UtilityType.PIPE, 0.50, 0.93, 0.50, 0.60, '2" PVC drain', "Sink centerline"),
             _m(
                 UtilityType.WIRE,
                 0.78,
@@ -73,6 +127,7 @@ SAMPLE_WALLS: tuple[SampleWall, ...] = (
             ),
         ),
         notes="Opened for disposal install. Drain vent runs up and left toward the window.",
+        size=(144, 96),
     ),
     SampleWall(
         key="kitchen-stove",
@@ -172,10 +227,11 @@ SAMPLE_WALLS: tuple[SampleWall, ...] = (
                 "Branch circuits bundle, 36 in above floor",
                 "Left of panel",
             ),
-            _m(UtilityType.PIPE, 0.72, 0.65, '3/4" gas line, 30 in above floor', "Right of panel"),
+            _line(UtilityType.PIPE, 0.60, 0.65, 1.0, 0.65, '3/4" gas line', "Right of panel"),
             _m(UtilityType.FRAMING, 0.55, 0.50, "Stud at 16 in o.c.", "Panel centerline"),
         ),
         notes="Keep 36 in clearance in front of the panel.",
+        size=(96, 84),
     ),
 )
 
@@ -202,6 +258,7 @@ class SeedService:
                 coverage_note=sample.coverage_note,
                 uncovered_region=sample.uncovered_region,
                 photo_id=photo_id,
+                calibration=_calibration(sample.size) if photo_id else None,
                 markers=list(sample.markers),
                 notes=sample.notes,
             )
