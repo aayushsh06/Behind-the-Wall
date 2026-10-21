@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import type { Point } from '@/components/photo'
 import { PhotoCanvas } from '@/components/photo'
-import { BottomSheet, Button, ErrorMessage, TextField } from '@/components/ui'
+import { BottomSheet, Button, ErrorMessage, InfoBox, TextField } from '@/components/ui'
 import { isCalibrationValid, markerPosition } from '@/domain/geometry'
 import type { MarkerKind } from '@/domain/types'
 import { MarkerForm } from '@/features/capture/MarkerForm'
@@ -60,7 +60,7 @@ export function MarkersStep({ draft, dispatch, submitting, submitError, submitLa
       {canPlace && draft.photo ? (
         <>
           <PlacementModeToggle value={mode} onChange={changeMode} />
-          <p className="text-sm text-stone-600">{instructions}</p>
+          <p className="text-sm leading-relaxed text-fg-muted">{instructions}</p>
           <PhotoCanvas
             src={draft.photo.url}
             alt="Wall"
@@ -90,9 +90,7 @@ export function MarkersStep({ draft, dispatch, submitting, submitError, submitLa
           />
         </>
       ) : (
-        <p className="rounded-xl bg-stone-100 p-4 text-sm text-stone-600">
-          This wall is recorded as not inspected, so there are no items to mark.
-        </p>
+        <InfoBox>This wall is recorded as not inspected, so there are no items to mark.</InfoBox>
       )}
 
       <TextField
@@ -114,7 +112,7 @@ export function MarkersStep({ draft, dispatch, submitting, submitError, submitLa
         </Button>
       </div>
       {incomplete.length > 0 ? (
-        <p className="text-center text-xs text-amber-700">Add a measurement to every item before saving.</p>
+        <p className="text-center text-xs text-amber-300">Add a measurement to every item before saving.</p>
       ) : null}
 
       <BottomSheet

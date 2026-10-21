@@ -20,7 +20,7 @@ export function CoverageSelector({ value, onChange, hasPhoto }: CoverageSelector
     <div>
       <SegmentedControl label="How much of the wall was visible?" options={options} value={value} onChange={onChange} />
       {!hasPhoto ? (
-        <p className="mt-1 text-xs text-stone-500">Add a photo to record full or partial coverage.</p>
+        <p className="mt-1.5 text-xs text-fg-faint">Add a photo to record full or partial coverage.</p>
       ) : null}
     </div>
   )

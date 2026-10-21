@@ -15,9 +15,9 @@ export function ShareSheet({ open, wallId, title, onClose }: ShareSheetProps) {
 
   return (
     <BottomSheet open={open} title="Share this wall" onClose={onClose}>
-      <p className="mb-4 text-sm text-stone-600">
-        The file contains only <strong>{title}</strong>: its photo, items, author, and date. Nothing else from your
-        home is included.
+      <p className="mb-5 text-sm leading-relaxed text-fg-muted">
+        The file contains only <strong className="text-fg">{title}</strong>: its photo, items, author, and date.
+        Nothing else from your home is included.
       </p>
       <div className="flex flex-col gap-2">
         <Button size="lg" fullWidth loading={working} onClick={() => void share('html')}>
@@ -30,9 +30,9 @@ export function ShareSheet({ open, wallId, title, onClose }: ShareSheetProps) {
           Share data file (for re-import)
         </Button>
       </div>
-      {status === 'shared' ? <p className="mt-3 text-center text-sm text-green-700">Shared.</p> : null}
+      {status === 'shared' ? <p className="mt-3 text-center text-sm text-emerald-300">Shared.</p> : null}
       {status === 'downloaded' ? (
-        <p className="mt-3 text-center text-sm text-green-700">Downloaded. Send the file to whoever needs it.</p>
+        <p className="mt-3 text-center text-sm text-emerald-300">Downloaded. Send the file to whoever needs it.</p>
       ) : null}
       {status === 'error' ? <div className="mt-3"><ErrorMessage error={error} /></div> : null}
     </BottomSheet>

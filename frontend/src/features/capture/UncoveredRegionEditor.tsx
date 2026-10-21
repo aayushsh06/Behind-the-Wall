@@ -35,7 +35,7 @@ export function UncoveredRegionEditor({ photo, region, onChange }: UncoveredRegi
 
   return (
     <fieldset className="flex flex-col gap-3">
-      <legend className="mb-1 text-sm font-medium text-stone-700">Which part was not inspected?</legend>
+      <legend className="mb-1.5 text-[13px] font-medium text-fg-muted">Which part was not inspected?</legend>
       <PhotoCanvas src={photo.url} alt="Wall" aspectRatio={photo.width / photo.height} markers={[]} uncoveredRegion={region} />
       <div className="grid grid-cols-2 gap-2">
         {PRESETS.map((preset) => (
@@ -44,15 +44,17 @@ export function UncoveredRegionEditor({ photo, region, onChange }: UncoveredRegi
             type="button"
             onClick={() => onChange(preset.region)}
             className={cn(
-              'rounded-xl border py-2 text-sm font-medium',
-              sameRegion(preset.region, region) ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-300 bg-white',
+              'rounded-xl border py-2 text-sm font-medium transition-colors',
+              sameRegion(preset.region, region)
+                ? 'border-fg bg-fg text-bg'
+                : 'border-line bg-surface-2 text-fg-muted hover:text-fg',
             )}
           >
             {preset.label}
           </button>
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-stone-600">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-fg-muted">
         <RangeField label="Left" value={region.x} onChange={(x) => set({ x })} />
         <RangeField label="Top" value={region.y} onChange={(y) => set({ y })} />
         <RangeField label="Width" value={region.width} min={0.05} onChange={(width) => set({ width })} />
