@@ -99,7 +99,7 @@ export function PhotoCanvas({
       ref={surfaceRef}
       onClick={handleSurfaceClick}
       className={cn(
-        'relative w-full overflow-hidden rounded-xl bg-stone-200 select-none',
+        'relative w-full overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-line select-none',
         editable && 'cursor-crosshair',
       )}
       style={{ aspectRatio }}
@@ -118,7 +118,7 @@ export function PhotoCanvas({
       {pendingLineStart ? (
         <span
           aria-label="Line start"
-          className="pointer-events-none absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-stone-900 shadow"
+          className="pointer-events-none absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-accent shadow"
           style={toPercentStyle(pendingLineStart)}
         />
       ) : null}

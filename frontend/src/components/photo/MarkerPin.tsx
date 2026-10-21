@@ -31,7 +31,7 @@ export function MarkerPin({ index, type, position, selected, draggable, surfaceR
       className={cn(
         'absolute flex size-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full',
         'border-2 border-white text-sm font-bold text-white shadow-md touch-none',
-        selected && 'ring-4 ring-stone-900/40 scale-110',
+        selected && 'ring-4 ring-accent/70 scale-110',
         draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
       )}
     >

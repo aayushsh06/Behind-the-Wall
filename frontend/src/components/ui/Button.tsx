@@ -14,15 +14,15 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANT_CLASSES: Record<Variant, string> = {
-  primary: 'bg-stone-900 text-white hover:bg-stone-800 disabled:bg-stone-400',
-  secondary: 'bg-white text-stone-900 border border-stone-300 hover:bg-stone-100',
-  ghost: 'bg-transparent text-stone-700 hover:bg-stone-100',
-  danger: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300',
+  primary: 'bg-fg text-bg hover:bg-white disabled:bg-fg/40 disabled:text-bg/70',
+  secondary: 'bg-surface-2 text-fg border border-line-strong hover:bg-surface-3 disabled:opacity-50',
+  ghost: 'bg-transparent text-fg-muted hover:bg-white/5 hover:text-fg disabled:opacity-50',
+  danger: 'bg-red-500/15 text-red-300 border border-red-500/30 hover:bg-red-500/25 disabled:opacity-50',
 }
 
 const SIZE_CLASSES: Record<Size, string> = {
   md: 'h-11 px-4 text-sm',
-  lg: 'h-13 px-5 text-base',
+  lg: 'h-12 px-5 text-[15px]',
 }
 
 export function Button({
@@ -41,8 +41,10 @@ export function Button({
       type={type}
       disabled={disabled || loading}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-colors',
-        'disabled:cursor-not-allowed select-none',
+        'inline-flex items-center justify-center gap-2 rounded-xl font-semibold tracking-[-0.01em]',
+        'transition-[background-color,transform,opacity] duration-150 active:scale-[0.98]',
+        'disabled:cursor-not-allowed disabled:active:scale-100 select-none',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
         VARIANT_CLASSES[variant],
         SIZE_CLASSES[size],
         fullWidth && 'w-full',

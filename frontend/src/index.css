@@ -1,14 +1,35 @@
 @import "tailwindcss";
 
+/*
+  Design tokens. Components only use these semantic names (bg, surface, fg, line, accent)
+  plus the fixed utility colors, so the whole palette can change here in one place.
+*/
 @theme {
-  --color-pipe: #1f6feb;
-  --color-wire: #d4a017;
-  --color-framing: #8b5a2b;
-  --color-other: #6b6b6b;
+  --color-bg: #0d0f13;
+  --color-surface: #151821;
+  --color-surface-2: #1c2029;
+  --color-surface-3: #242934;
+  --color-line: #272c37;
+  --color-line-strong: #363c49;
+  --color-fg: #eef0f5;
+  --color-fg-muted: #9aa1b1;
+  --color-fg-faint: #6a7183;
+  --color-accent: #5eead4;
+  --color-accent-strong: #2dd4bf;
+
+  --color-pipe: #3b82f6;
+  --color-wire: #f5b544;
+  --color-framing: #b07a46;
+  --color-other: #8b93a5;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", Inter, sans-serif;
+
+  --shadow-card: 0 1px 0 0 rgb(255 255 255 / 0.03) inset, 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  --shadow-sheet: 0 -12px 40px -8px rgb(0 0 0 / 0.7);
 }
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 html, body, #root {
@@ -16,6 +37,12 @@ html, body, #root {
 }
 
 body {
-  @apply bg-stone-50 text-stone-900 antialiased;
+  @apply bg-bg text-fg antialiased;
+  background-image: radial-gradient(120% 60% at 50% -10%, #1a1f2b 0%, var(--color-bg) 60%);
+  background-attachment: fixed;
   padding-top: env(safe-area-inset-top, 0px);
+}
+
+input[type="range"] {
+  accent-color: var(--color-accent);
 }

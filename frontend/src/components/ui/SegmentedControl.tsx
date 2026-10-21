@@ -22,8 +22,8 @@ export function SegmentedControl<T extends string>({
 }: SegmentedControlProps<T>) {
   return (
     <div>
-      {label ? <span className="mb-1 block text-sm font-medium text-stone-700">{label}</span> : null}
-      <div role="radiogroup" className="flex rounded-xl border border-stone-300 bg-white p-1">
+      {label ? <span className="mb-1.5 block text-[13px] font-medium text-fg-muted">{label}</span> : null}
+      <div role="radiogroup" className="flex rounded-xl border border-line bg-surface-2 p-1">
         {options.map((option) => {
           const selected = option.value === value
           return (
@@ -35,7 +35,7 @@ export function SegmentedControl<T extends string>({
               onClick={() => onChange(option.value)}
               className={cn(
                 'flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition-colors',
-                selected ? 'bg-stone-900 text-white' : 'text-stone-700 hover:bg-stone-100',
+                selected ? 'bg-surface-3 text-fg shadow-card' : 'text-fg-muted hover:text-fg',
               )}
             >
               {option.swatch ? (

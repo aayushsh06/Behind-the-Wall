@@ -21,7 +21,7 @@ export function Handle({ label, position, surfaceRef, color = '#111827', onMove 
       {...handlers}
       style={{ ...toPercentStyle(position), borderColor: color }}
       className={cn(
-        'absolute size-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] bg-white shadow',
+        'absolute size-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] bg-white shadow-md',
         'touch-none cursor-grab active:cursor-grabbing',
       )}
     />
