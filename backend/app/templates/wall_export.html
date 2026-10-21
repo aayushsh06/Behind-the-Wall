@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ wall.room }} · {{ wall.label }} · Behind the Wall</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; padding: 16px; font: 15px/1.45 system-ui, -apple-system, sans-serif; color: #1a1a1a; background: #fafafa; }
+  main { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .meta { color: #555; margin: 0 0 16px; }
+  .meta span + span::before { content: " · "; }
+  .banner { padding: 10px 12px; border-radius: 8px; margin: 0 0 16px; font-weight: 600; }
+  .banner.full { background: #e4f5e8; color: #1d5c2d; }
+  .banner.partial { background: #fff2d6; color: #7a4d00; }
+  .banner.none { background: #fde2e2; color: #8a1c1c; }
+  figure { margin: 0 0 16px; }
+  .photo-wrap { position: relative; width: 100%; }
+  .photo-wrap img { display: block; width: 100%; height: auto; border-radius: 8px; }
+  .photo-wrap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .pin { font: 700 3.2px system-ui, sans-serif; fill: #fff; text-anchor: middle; dominant-baseline: central; }
+  .pin-pipe { fill: #1f6feb; } .pin-wire { fill: #d4a017; } .pin-framing { fill: #8b5a2b; } .pin-other { fill: #6b6b6b; }
+  .unknown { fill: url(#hatch); stroke: #b45309; stroke-width: 0.4; }
+  .unknown-label { font: 700 3px system-ui, sans-serif; fill: #7a4d00; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e6e6e6; vertical-align: top; }
+  th { background: #f0f0f0; font-size: 13px; }
+  .num { display: inline-block; min-width: 22px; height: 22px; line-height: 22px; border-radius: 50%; color: #fff; text-align: center; font-weight: 700; }
+  .notes { white-space: pre-wrap; background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #e6e6e6; }
+  footer { margin-top: 24px; color: #777; font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>{{ wall.room }} · {{ wall.label }}</h1>
+  <p class="meta">
+    <span>Recorded by <strong>{{ wall.author }}</strong></span>
+    <span>Observed {{ wall.observed_date.isoformat() }}</span>
+  </p>
+
+  <div class="banner {{ wall.coverage.value }}">{{ coverage_label }}</div>
+  {% if wall.coverage_note %}<p>{{ wall.coverage_note }}</p>{% endif %}
+
+  {% if photo_data_uri %}
+  <figure>
+    <div class="photo-wrap">
+      <img src="{{ photo_data_uri }}" alt="Photo of {{ wall.room }} {{ wall.label }}" width="{{ photo.width }}" height="{{ photo.height }}">
+      <svg viewBox="0 0 100 {{ (100 * photo.height / photo.width) | round(3) }}" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <pattern id="hatch" width="2" height="2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <rect width="2" height="2" fill="rgba(255,200,80,0.35)"/>
+            <line x1="0" y1="0" x2="0" y2="2" stroke="#b45309" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+        {% set aspect = photo.height / photo.width %}
+        {% if wall.uncovered_region %}
+          {% set r = wall.uncovered_region %}
+          <rect class="unknown" x="{{ r.x * 100 }}" y="{{ r.y * 100 * aspect }}" width="{{ r.width * 100 }}" height="{{ r.height * 100 * aspect }}"/>
+          <text class="unknown-label" x="{{ (r.x + r.width / 2) * 100 }}" y="{{ (r.y + r.height / 2) * 100 * aspect }}" text-anchor="middle">NOT INSPECTED</text>
+        {% endif %}
+        {% for m in markers %}
+          <circle class="pin-{{ m.type }}" cx="{{ m.x * 100 }}" cy="{{ m.y * 100 * aspect }}" r="2.6" stroke="#fff" stroke-width="0.4"/>
+          <text class="pin" x="{{ m.x * 100 }}" y="{{ m.y * 100 * aspect }}">{{ m.index }}</text>
+        {% endfor %}
+      </svg>
+    </div>
+  </figure>
+  {% endif %}
+
+  {% if markers %}
+  <table>
+    <thead><tr><th>#</th><th>Type</th><th>Measurement</th><th>Reference point</th><th>Note</th></tr></thead>
+    <tbody>
+    {% for m in markers %}
+      <tr>
+        <td><span class="num pin-{{ m.type }}" style="background: {{ {'pipe':'#1f6feb','wire':'#d4a017','framing':'#8b5a2b','other':'#6b6b6b'}[m.type] }}">{{ m.index }}</span></td>
+        <td>{{ m.type_label }}</td>
+        <td>{{ m.measurement }}</td>
+        <td>{{ m.reference_point }}</td>
+        <td>{{ m.note }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p><em>No items recorded for this wall.</em></p>
+  {% endif %}
+
+  {% if wall.notes %}
+  <h2>Notes</h2>
+  <div class="notes">{{ wall.notes }}</div>
+  {% endif %}
+
+  <footer>
+    Behind the Wall record · ID {{ wall.id }} · Last updated {{ wall.updated_at.strftime('%Y-%m-%d %H:%M') }}.
+    This record describes what was observed on the date above. Verify on site before cutting or drilling.
+  </footer>
+</main>
+</body>
+</html>
