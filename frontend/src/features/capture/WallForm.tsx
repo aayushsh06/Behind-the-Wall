@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { StepIndicator } from '@/features/capture/StepIndicator'
 import type { CaptureStep } from '@/features/capture/captureSteps'
 import { DetailsStep } from '@/features/capture/steps/DetailsStep'
+import { DimensionsStep } from '@/features/capture/steps/DimensionsStep'
 import { MarkersStep } from '@/features/capture/steps/MarkersStep'
 import { PhotoStep } from '@/features/capture/steps/PhotoStep'
 import { useWallDraft } from '@/features/capture/useWallDraft'
@@ -32,6 +33,14 @@ export function WallForm({ initialDraft, knownRooms, submitLabel, submitting, su
           photo={draft.photo}
           onPhoto={(photo) => dispatch({ type: 'setPhoto', photo })}
           onClear={() => dispatch({ type: 'clearPhoto' })}
+          onNext={() => setStep(draft.photo ? 'dimensions' : 'details')}
+        />
+      ) : null}
+      {step === 'dimensions' ? (
+        <DimensionsStep
+          draft={draft}
+          dispatch={dispatch}
+          onBack={() => setStep('photo')}
           onNext={() => setStep('details')}
         />
       ) : null}
@@ -40,7 +49,7 @@ export function WallForm({ initialDraft, knownRooms, submitLabel, submitting, su
           draft={draft}
           dispatch={dispatch}
           knownRooms={knownRooms}
-          onBack={() => setStep('photo')}
+          onBack={() => setStep(draft.photo ? 'dimensions' : 'photo')}
           onNext={() => setStep('markers')}
         />
       ) : null}

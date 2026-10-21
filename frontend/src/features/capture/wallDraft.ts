@@ -1,7 +1,8 @@
 /** Client-side draft of a wall record and the pure reducer that edits it. */
 
 import type { Point } from '@/components/photo'
-import type { Coverage, Marker, Region, UtilityType, Wall, WallCalibration, WallInput } from '@/domain/types'
+import type { CalibrationCorner, LineEndpoint } from '@/components/photo'
+import type { Coverage, LengthUnit, Marker, Region, UtilityType, Wall, WallCalibration, WallInput } from '@/domain/types'
 import { todayIso } from '@/lib/format'
 
 export interface DraftPhoto {
@@ -28,6 +29,14 @@ export interface WallDraft {
 
 export const DEFAULT_REGION: Region = { x: 0, y: 0, width: 1, height: 0.5 }
 export const DEFAULT_MARKER_TYPE: UtilityType = 'pipe'
+/** Starting guess for the wall corners: inset so both handles are visible and grabbable. */
+export const DEFAULT_CALIBRATION: WallCalibration = {
+  top_left: { x: 0.08, y: 0.08 },
+  bottom_right: { x: 0.92, y: 0.92 },
+  width: 120,
+  height: 96,
+  unit: 'in',
+}
 
 export function emptyDraft(author = ''): WallDraft {
   return {
@@ -90,9 +99,15 @@ export type DraftAction =
   | { type: 'setField'; field: TextField; value: string }
   | { type: 'setCoverage'; coverage: Coverage }
   | { type: 'setRegion'; region: Region }
+  | { type: 'setCalibration'; calibration: WallCalibration | null }
+  | { type: 'moveCalibrationCorner'; corner: CalibrationCorner; point: Point }
+  | { type: 'setCalibrationSize'; changes: Partial<Pick<WallCalibration, 'width' | 'height'>> & { unit?: LengthUnit } }
   | { type: 'addMarker'; point: Point }
+  | { type: 'addLineMarker'; start: Point; end: Point }
   | { type: 'updateMarker'; id: string; changes: Partial<Omit<Marker, 'id'>> }
   | { type: 'moveMarker'; id: string; point: Point }
+  | { type: 'translateMarker'; id: string; dx: number; dy: number }
+  | { type: 'moveMarkerEndpoint'; id: string; endpoint: LineEndpoint; point: Point }
   | { type: 'removeMarker'; id: string }
   | { type: 'selectMarker'; id: string | null }
 
@@ -100,6 +115,24 @@ const newMarkerId = () =>
   typeof crypto.randomUUID === 'function'
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`
+
+const clamp01 = (n: number) => Math.min(1, Math.max(0, n))
+
+function newMarker(fields: Pick<Marker, 'kind' | 'x' | 'y' | 'x2' | 'y2'>): Marker {
+  return { id: newMarkerId(), type: DEFAULT_MARKER_TYPE, measurement: '', reference_point: '', note: '', ...fields }
+}
+
+/** Shift both endpoints of a line, stopping at the photo edge so the line keeps its length. */
+function translateLine(marker: Marker, dx: number, dy: number): Marker {
+  if (marker.x2 === null || marker.y2 === null) return marker
+  const minX = Math.min(marker.x, marker.x2)
+  const maxX = Math.max(marker.x, marker.x2)
+  const minY = Math.min(marker.y, marker.y2)
+  const maxY = Math.max(marker.y, marker.y2)
+  const safeDx = Math.min(Math.max(dx, -minX), 1 - maxX)
+  const safeDy = Math.min(Math.max(dy, -minY), 1 - maxY)
+  return { ...marker, x: marker.x + safeDx, y: marker.y + safeDy, x2: marker.x2 + safeDx, y2: marker.y2 + safeDy }
+}
 
 export function draftReducer(draft: WallDraft, action: DraftAction): WallDraft {
   switch (action.type) {
@@ -131,19 +164,31 @@ export function draftReducer(draft: WallDraft, action: DraftAction): WallDraft {
       }
     case 'setRegion':
       return { ...draft, uncoveredRegion: action.region }
-    case 'addMarker': {
-      const marker: Marker = {
-        id: newMarkerId(),
-        type: DEFAULT_MARKER_TYPE,
-        kind: 'point',
-        x: action.point.x,
-        y: action.point.y,
-        x2: null,
-        y2: null,
-        measurement: '',
-        reference_point: '',
-        note: '',
+    case 'setCalibration':
+      return { ...draft, calibration: action.calibration }
+    case 'moveCalibrationCorner': {
+      const current = draft.calibration ?? DEFAULT_CALIBRATION
+      return {
+        ...draft,
+        calibration: { ...current, [action.corner]: { x: clamp01(action.point.x), y: clamp01(action.point.y) } },
       }
+    }
+    case 'setCalibrationSize': {
+      const current = draft.calibration ?? DEFAULT_CALIBRATION
+      return { ...draft, calibration: { ...current, ...action.changes } }
+    }
+    case 'addMarker': {
+      const marker = newMarker({ kind: 'point', x: action.point.x, y: action.point.y, x2: null, y2: null })
+      return { ...draft, markers: [...draft.markers, marker], selectedMarkerId: marker.id }
+    }
+    case 'addLineMarker': {
+      const marker = newMarker({
+        kind: 'line',
+        x: action.start.x,
+        y: action.start.y,
+        x2: action.end.x,
+        y2: action.end.y,
+      })
       return { ...draft, markers: [...draft.markers, marker], selectedMarkerId: marker.id }
     }
     case 'updateMarker':
@@ -157,6 +202,21 @@ export function draftReducer(draft: WallDraft, action: DraftAction): WallDraft {
         markers: draft.markers.map((m) =>
           m.id === action.id ? { ...m, x: action.point.x, y: action.point.y } : m,
         ),
+      }
+    case 'translateMarker':
+      return {
+        ...draft,
+        markers: draft.markers.map((m) => (m.id === action.id ? translateLine(m, action.dx, action.dy) : m)),
+      }
+    case 'moveMarkerEndpoint':
+      return {
+        ...draft,
+        markers: draft.markers.map((m) => {
+          if (m.id !== action.id) return m
+          return action.endpoint === 'start'
+            ? { ...m, x: action.point.x, y: action.point.y }
+            : { ...m, x2: action.point.x, y2: action.point.y }
+        }),
       }
     case 'removeMarker':
       return {

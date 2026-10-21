@@ -1,6 +1,12 @@
+import { useState } from 'react'
+
+import type { Point } from '@/components/photo'
 import { PhotoCanvas } from '@/components/photo'
 import { BottomSheet, Button, ErrorMessage, TextField } from '@/components/ui'
+import { isCalibrationValid, markerPosition } from '@/domain/geometry'
+import type { MarkerKind } from '@/domain/types'
 import { MarkerForm } from '@/features/capture/MarkerForm'
+import { PlacementModeToggle } from '@/features/capture/PlacementModeToggle'
 import { incompleteMarkerIds } from '@/features/capture/validation'
 import type { DraftAction, WallDraft } from '@/features/capture/wallDraft'
 import { MarkerList } from '@/features/find/MarkerList'
@@ -16,29 +22,69 @@ interface MarkersStepProps {
 }
 
 export function MarkersStep({ draft, dispatch, submitting, submitError, submitLabel, onBack, onSubmit }: MarkersStepProps) {
+  const [mode, setMode] = useState<MarkerKind>('point')
+  const [pendingStart, setPendingStart] = useState<Point | null>(null)
+
   const selected = draft.markers.find((m) => m.id === draft.selectedMarkerId) ?? null
   const incomplete = incompleteMarkerIds(draft)
   const canPlace = draft.photo !== null && draft.coverage !== 'none'
+  const calibration = isCalibrationValid(draft.calibration) ? draft.calibration : null
+
+  const handlePlace = (point: Point) => {
+    if (mode === 'point') {
+      dispatch({ type: 'addMarker', point })
+      return
+    }
+    if (!pendingStart) {
+      setPendingStart(point)
+      return
+    }
+    dispatch({ type: 'addLineMarker', start: pendingStart, end: point })
+    setPendingStart(null)
+  }
+
+  const changeMode = (next: MarkerKind) => {
+    setMode(next)
+    setPendingStart(null)
+  }
+
+  const instructions =
+    mode === 'line'
+      ? pendingStart
+        ? 'Now tap where the run ends.'
+        : 'Tap where the run starts, then where it ends. Drag the badge to move it or the ends to adjust.'
+      : 'Tap the photo where each item is. Drag a pin to adjust.'
 
   return (
     <div className="flex flex-col gap-4">
       {canPlace && draft.photo ? (
         <>
-          <p className="text-sm text-stone-600">Tap the photo where each pipe, wire, or stud is. Drag a pin to adjust.</p>
+          <PlacementModeToggle value={mode} onChange={changeMode} />
+          <p className="text-sm text-stone-600">{instructions}</p>
           <PhotoCanvas
             src={draft.photo.url}
             alt="Wall"
             aspectRatio={draft.photo.width / draft.photo.height}
             markers={draft.markers}
             uncoveredRegion={draft.uncoveredRegion}
+            calibration={calibration}
             selectedMarkerId={draft.selectedMarkerId}
+            pendingLineStart={pendingStart}
             editable
-            onPlace={(point) => dispatch({ type: 'addMarker', point })}
+            onPlace={handlePlace}
             onSelectMarker={(id) => dispatch({ type: 'selectMarker', id })}
             onMoveMarker={(id, point) => dispatch({ type: 'moveMarker', id, point })}
+            onTranslateMarker={(id, dx, dy) => dispatch({ type: 'translateMarker', id, dx, dy })}
+            onMoveMarkerEndpoint={(id, endpoint, point) => dispatch({ type: 'moveMarkerEndpoint', id, endpoint, point })}
           />
+          {pendingStart ? (
+            <Button variant="ghost" onClick={() => setPendingStart(null)}>
+              Cancel this line
+            </Button>
+          ) : null}
           <MarkerList
             markers={draft.markers}
+            calibration={calibration}
             selectedId={draft.selectedMarkerId}
             onSelect={(id) => dispatch({ type: 'selectMarker', id })}
           />
@@ -79,6 +125,7 @@ export function MarkersStep({ draft, dispatch, submitting, submitError, submitLa
         {selected ? (
           <MarkerForm
             marker={selected}
+            position={markerPosition(selected, calibration)}
             onChange={(changes) => dispatch({ type: 'updateMarker', id: selected.id, changes })}
             onDelete={() => dispatch({ type: 'removeMarker', id: selected.id })}
             onDone={() => dispatch({ type: 'selectMarker', id: null })}

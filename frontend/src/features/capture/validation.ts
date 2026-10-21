@@ -1,3 +1,4 @@
+import { isCalibrationValid } from '@/domain/geometry'
 import type { WallDraft } from '@/features/capture/wallDraft'
 
 export type DetailsErrors = Partial<Record<'room' | 'label' | 'author' | 'observedDate', string>>
@@ -11,7 +12,19 @@ export function validateDetails(draft: WallDraft): DetailsErrors {
   return errors
 }
 
-/** Markers with no measurement are incomplete; the save button stays disabled until fixed. */
+/**
+ * A marker needs a manual measurement unless the wall is calibrated, in which case the
+ * app computes its position. The save button stays disabled until every marker is complete.
+ */
 export function incompleteMarkerIds(draft: WallDraft): string[] {
+  if (isCalibrationValid(draft.calibration)) return []
   return draft.markers.filter((m) => !m.measurement.trim()).map((m) => m.id)
+}
+
+export function calibrationErrors(draft: WallDraft): string | null {
+  const c = draft.calibration
+  if (!c) return null
+  if (!(c.width > 0) || !(c.height > 0)) return 'Enter the wall width and height.'
+  if (!isCalibrationValid(c)) return 'Drag the corners so the top-left is above and left of the bottom-right.'
+  return null
 }
