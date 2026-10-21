@@ -23,3 +23,35 @@ def test_upload_rejects_non_image(client: TestClient) -> None:
 
 def test_missing_photo_returns_404(client: TestClient) -> None:
     assert client.get("/api/photos/doesnotexist").status_code == 404
+
+
+def test_photo_revalidates_with_etag(client: TestClient, uploaded_photo: dict) -> None:
+    url = f"/api/photos/{uploaded_photo['id']}"
+    first = client.get(url)
+    etag = first.headers["etag"]
+    assert first.headers["cache-control"] == "no-cache"
+
+    cached = client.get(url, headers={"If-None-Match": etag})
+    assert cached.status_code == 304
+    assert cached.content == b""
+
+
+def test_rewritten_photo_gets_new_etag(client: TestClient, uploaded_photo: dict) -> None:
+    from io import BytesIO
+
+    from PIL import Image
+
+    from app.api.deps import get_photo_storage
+    from app.core.config import get_settings
+
+    url = f"/api/photos/{uploaded_photo['id']}"
+    old_etag = client.get(url).headers["etag"]
+
+    replacement = BytesIO()
+    Image.new("RGB", (800, 600), (10, 20, 30)).save(replacement, format="JPEG")
+    storage = get_photo_storage(get_settings())
+    storage.save(uploaded_photo["id"], replacement.getvalue())  # new bytes, same id
+
+    refreshed = client.get(url, headers={"If-None-Match": old_etag})
+    assert refreshed.status_code == 200
+    assert refreshed.headers["etag"] != old_etag
