@@ -1,7 +1,7 @@
 /** Client-side draft of a wall record and the pure reducer that edits it. */
 
 import type { Point } from '@/components/photo'
-import type { Coverage, Marker, Region, UtilityType, Wall, WallInput } from '@/domain/types'
+import type { Coverage, Marker, Region, UtilityType, Wall, WallCalibration, WallInput } from '@/domain/types'
 import { todayIso } from '@/lib/format'
 
 export interface DraftPhoto {
@@ -20,6 +20,7 @@ export interface WallDraft {
   coverage: Coverage
   coverageNote: string
   uncoveredRegion: Region | null
+  calibration: WallCalibration | null
   markers: Marker[]
   notes: string
   selectedMarkerId: string | null
@@ -38,6 +39,7 @@ export function emptyDraft(author = ''): WallDraft {
     coverage: 'none',
     coverageNote: '',
     uncoveredRegion: null,
+    calibration: null,
     markers: [],
     notes: '',
     selectedMarkerId: null,
@@ -57,6 +59,7 @@ export function draftFromWall(wall: Wall, photoUrl: (id: string) => string, size
     coverage: wall.coverage,
     coverageNote: wall.coverage_note,
     uncoveredRegion: wall.uncovered_region,
+    calibration: wall.calibration,
     markers: wall.markers,
     notes: wall.notes,
     selectedMarkerId: null,
@@ -73,6 +76,7 @@ export function draftToInput(draft: WallDraft): WallInput {
     coverage_note: draft.coverageNote.trim(),
     uncovered_region: draft.coverage === 'partial' ? draft.uncoveredRegion : null,
     photo_id: draft.photo?.id ?? null,
+    calibration: draft.photo ? draft.calibration : null,
     markers: draft.markers.map(({ id: _id, ...rest }) => rest),
     notes: draft.notes.trim(),
   }
@@ -106,7 +110,15 @@ export function draftReducer(draft: WallDraft, action: DraftAction): WallDraft {
         coverage: draft.coverage === 'none' ? 'full' : draft.coverage,
       }
     case 'clearPhoto':
-      return { ...draft, photo: null, coverage: 'none', uncoveredRegion: null, markers: [], selectedMarkerId: null }
+      return {
+        ...draft,
+        photo: null,
+        coverage: 'none',
+        uncoveredRegion: null,
+        calibration: null,
+        markers: [],
+        selectedMarkerId: null,
+      }
     case 'setField':
       return { ...draft, [action.field]: action.value }
     case 'setCoverage':
@@ -123,8 +135,11 @@ export function draftReducer(draft: WallDraft, action: DraftAction): WallDraft {
       const marker: Marker = {
         id: newMarkerId(),
         type: DEFAULT_MARKER_TYPE,
+        kind: 'point',
         x: action.point.x,
         y: action.point.y,
+        x2: null,
+        y2: null,
         measurement: '',
         reference_point: '',
         note: '',
