@@ -48,7 +48,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-stone-200 bg-white/95 backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/85 backdrop-blur-xl"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <ul className="mx-auto flex max-w-lg">
@@ -59,13 +59,18 @@ export function BottomNav() {
               end={item.end}
               className={({ isActive }) =>
                 cn(
-                  'flex h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium',
-                  isActive ? 'text-stone-900' : 'text-stone-500 hover:text-stone-700',
+                  'relative flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors',
+                  isActive ? 'text-fg' : 'text-fg-faint hover:text-fg-muted',
                 )
               }
             >
-              {item.icon}
-              {item.label}
+              {({ isActive }) => (
+                <>
+                  <span className={cn('transition-colors', isActive && 'text-accent')}>{item.icon}</span>
+                  {item.label}
+                  {isActive ? <span className="absolute top-0 h-0.5 w-8 rounded-full bg-accent" /> : null}
+                </>
+              )}
             </NavLink>
           </li>
         ))}

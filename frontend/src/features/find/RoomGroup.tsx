@@ -1,12 +1,14 @@
+import { SectionHeading } from '@/components/ui'
 import { WallListItem } from '@/features/find/WallListItem'
 import type { RoomGroupData } from '@/features/find/useWallSearch'
 
 export function RoomGroup({ room, walls }: RoomGroupData) {
+  const id = `room-${room.replace(/\s+/g, '-').toLowerCase()}`
   return (
-    <section aria-labelledby={`room-${room}`}>
-      <h2 id={`room-${room}`} className="mb-2 text-sm font-semibold uppercase tracking-wide text-stone-500">
+    <section aria-labelledby={id}>
+      <SectionHeading id={id} aside={`${walls.length} ${walls.length === 1 ? 'wall' : 'walls'}`}>
         {room}
-      </h2>
+      </SectionHeading>
       <ul className="flex flex-col gap-2">
         {walls.map((wall) => (
           <WallListItem key={wall.id} wall={wall} />

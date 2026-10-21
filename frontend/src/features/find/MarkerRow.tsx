@@ -25,12 +25,12 @@ export function MarkerRow({ index, marker, calibration, selected, onSelect }: Ma
         onClick={onSelect}
         aria-pressed={selected}
         className={cn(
-          'flex w-full items-start gap-3 rounded-xl border p-3 text-left',
-          selected ? 'border-stone-900 bg-stone-100' : 'border-stone-200 bg-white',
+          'flex w-full items-start gap-3 rounded-2xl border p-3.5 text-left transition-colors',
+          selected ? 'border-accent/60 bg-accent/5' : 'border-line bg-surface hover:border-line-strong',
         )}
       >
         <span
-          className="flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+          className="flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ring-2 ring-bg"
           style={{ backgroundColor: meta.hex }}
         >
           {index}
@@ -38,15 +38,15 @@ export function MarkerRow({ index, marker, calibration, selected, onSelect }: Ma
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold">{title}</span>
           {position ? (
-            <span className="block text-sm text-stone-700">
+            <span className="mt-0.5 block text-[13px] text-fg-muted">
               {position.length ? `${position.length} · ` : ''}
               {position.summary}
             </span>
           ) : null}
           {marker.reference_point ? (
-            <span className="block text-sm text-stone-600">From: {marker.reference_point}</span>
+            <span className="mt-0.5 block text-[13px] text-fg-muted">From: {marker.reference_point}</span>
           ) : null}
-          {marker.note ? <span className="block text-xs text-stone-500">{marker.note}</span> : null}
+          {marker.note ? <span className="mt-0.5 block text-xs text-fg-faint">{marker.note}</span> : null}
         </span>
       </button>
     </li>

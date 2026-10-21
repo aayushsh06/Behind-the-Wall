@@ -10,7 +10,7 @@ interface MarkerListProps {
 
 export function MarkerList({ markers, calibration, selectedId, onSelect }: MarkerListProps) {
   if (markers.length === 0) {
-    return <p className="text-sm text-stone-600">No items recorded for this wall.</p>
+    return <p className="rounded-2xl border border-dashed border-line-strong p-4 text-center text-sm text-fg-muted">No items recorded for this wall.</p>
   }
   return (
     <ul className="flex flex-col gap-2">

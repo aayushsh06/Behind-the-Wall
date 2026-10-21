@@ -24,10 +24,10 @@ export function WallActions({ wallId, title }: WallActionsProps) {
   return (
     <>
       <div
-        className="fixed inset-x-0 bottom-14 z-30 border-t border-stone-200 bg-white/95 backdrop-blur"
-        style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom, 0px))' }}
+        className="fixed inset-x-0 z-30 border-t border-line bg-bg/85 backdrop-blur-xl"
+        style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
       >
-        <div className="mx-auto flex max-w-lg gap-2 px-4 py-2">
+        <div className="mx-auto flex max-w-lg gap-2 px-4 py-2.5">
           {confirmDelete ? (
             <>
               <Button variant="secondary" onClick={() => setConfirmDelete(false)} disabled={deleteWall.isPending}>

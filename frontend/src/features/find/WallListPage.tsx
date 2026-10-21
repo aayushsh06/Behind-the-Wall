@@ -16,7 +16,7 @@ export function WallListPage() {
   return (
     <>
       <PageHeader title="Walls" subtitle="Find a wall to see what is behind it" />
-      <div className="mb-4">
+      <div className="mb-5">
         <WallSearch value={query} onChange={setQuery} />
       </div>
 
@@ -45,7 +45,7 @@ export function WallListPage() {
         <EmptyState title="No walls match" description={`Nothing matches “${query}”.`} />
       ) : null}
 
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-6">
         {groups.map((group) => (
           <RoomGroup key={group.room} {...group} />
         ))}

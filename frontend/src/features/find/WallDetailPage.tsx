@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 
 import { routes } from '@/app/routes'
-import { ErrorMessage, PageHeader, Spinner } from '@/components/ui'
+import { ErrorMessage, PageHeader, SectionHeading, Spinner } from '@/components/ui'
 import { describeWallSize } from '@/domain/geometry'
 import { CoverageBanner } from '@/features/find/CoverageBanner'
 import { MarkerList } from '@/features/find/MarkerList'
@@ -48,14 +48,11 @@ export function WallDetailPage() {
         ) : null}
 
         <section>
-          <div className="mb-2 flex items-baseline justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
-              Items ({wall.markers.length})
-            </h2>
-            <span className="text-xs text-stone-500">
-              {wall.calibration ? `Wall ${describeWallSize(wall.calibration)}` : 'Wall size not recorded'}
-            </span>
-          </div>
+          <SectionHeading
+            aside={wall.calibration ? `Wall ${describeWallSize(wall.calibration)}` : 'Wall size not recorded'}
+          >
+            Items ({wall.markers.length})
+          </SectionHeading>
           <MarkerList
             markers={wall.markers}
             calibration={wall.calibration}
@@ -63,7 +60,7 @@ export function WallDetailPage() {
             onSelect={toggleMarker}
           />
           {wall.calibration ? (
-            <p className="mt-2 text-xs text-stone-500">
+            <p className="mt-2.5 text-xs text-fg-faint">
               Positions are computed from the wall corners marked in the photo and are approximate.
             </p>
           ) : null}
@@ -71,8 +68,8 @@ export function WallDetailPage() {
 
         {wall.notes ? (
           <section>
-            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-stone-500">Notes</h2>
-            <p className="whitespace-pre-wrap rounded-xl border border-stone-200 bg-white p-3 text-sm">
+            <SectionHeading>Notes</SectionHeading>
+            <p className="whitespace-pre-wrap rounded-2xl border border-line bg-surface p-4 text-sm leading-relaxed text-fg-muted">
               {wall.notes}
             </p>
           </section>
