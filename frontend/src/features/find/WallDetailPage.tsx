@@ -5,6 +5,7 @@ import { routes } from '@/app/routes'
 import { ErrorMessage, PageHeader, Spinner } from '@/components/ui'
 import { CoverageBanner } from '@/features/find/CoverageBanner'
 import { MarkerList } from '@/features/find/MarkerList'
+import { WallActions } from '@/features/find/WallActions'
 import { WallPhoto } from '@/features/find/WallPhoto'
 import { useWall } from '@/hooks/useWall'
 import { formatDate } from '@/lib/format'
@@ -29,7 +30,7 @@ export function WallDetailPage() {
         backTo={routes.home()}
       />
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 pb-16">
         <CoverageBanner coverage={wall.coverage} note={wall.coverage_note} />
 
         {wall.photo_id ? (
@@ -59,6 +60,8 @@ export function WallDetailPage() {
           </section>
         ) : null}
       </div>
+
+      <WallActions wallId={wall.id} title={`${wall.room} · ${wall.label}`} />
     </>
   )
 }
