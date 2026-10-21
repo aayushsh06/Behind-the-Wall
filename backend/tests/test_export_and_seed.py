@@ -1,0 +1,47 @@
+import base64
+
+from fastapi.testclient import TestClient
+
+from tests.conftest import wall_payload
+
+
+def test_html_export_is_self_contained(client: TestClient, uploaded_photo: dict) -> None:
+    wall = client.post("/api/walls", json=wall_payload(uploaded_photo["id"])).json()
+    response = client.get(f"/api/walls/{wall['id']}/export.html")
+    assert response.status_code == 200
+    html = response.text
+    assert "data:image/jpeg;base64," in html
+    assert "Wall behind sink" in html
+    assert "Test Plumber" in html
+    assert "18 in above floor" in html
+    assert "Entire wall documented" in html
+    assert 'inline; filename="behind-the-wall-kitchen-wall-behind-sink.html"' in response.headers[
+        "content-disposition"
+    ]
+
+    download = client.get(f"/api/walls/{wall['id']}/export.html?download=true")
+    assert download.headers["content-disposition"].startswith("attachment;")
+
+
+def test_json_export_round_trips_photo(client: TestClient, uploaded_photo: dict) -> None:
+    wall = client.post("/api/walls", json=wall_payload(uploaded_photo["id"])).json()
+    payload = client.get(f"/api/walls/{wall['id']}/export.json").json()
+    assert payload["format"] == "behind-the-wall/wall"
+    assert payload["wall"]["id"] == wall["id"]
+    original = client.get(f"/api/photos/{uploaded_photo['id']}").content
+    assert base64.b64decode(payload["photo"]["data_base64"]) == original
+
+
+def test_seed_is_idempotent(client: TestClient) -> None:
+    first = client.post("/api/seed/sample-home").json()["wall_ids"]
+    second = client.post("/api/seed/sample-home").json()["wall_ids"]
+    assert first == second
+    assert len(first) == 6
+
+    walls = {w["id"]: w for w in client.get("/api/walls").json()}
+    coverages = sorted(walls[i]["coverage"] for i in first)
+    assert coverages == ["full", "full", "full", "none", "partial", "partial"]
+    with_photo = [walls[i] for i in first if walls[i]["photo_id"]]
+    assert len(with_photo) == 5
+    thumb = client.get(f"/api/photos/{with_photo[0]['photo_id']}/thumbnail")
+    assert thumb.status_code == 200
