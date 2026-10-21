@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  --color-pipe: #1f6feb;
+  --color-wire: #d4a017;
+  --color-framing: #8b5a2b;
+  --color-other: #6b6b6b;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-stone-50 text-stone-900 antialiased;
+  padding-top: env(safe-area-inset-top, 0px);
+}
