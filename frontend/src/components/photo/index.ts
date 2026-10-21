@@ -1,0 +1,6 @@
+export { PhotoCanvas } from './PhotoCanvas'
+export type { CanvasMarker } from './PhotoCanvas'
+export { MarkerPin } from './MarkerPin'
+export { UncoveredRegionOverlay } from './UncoveredRegionOverlay'
+export { toNormalizedPoint, toPercentStyle } from './coordinates'
+export type { Point } from './coordinates'
