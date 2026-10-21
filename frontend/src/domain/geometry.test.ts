@@ -58,10 +58,21 @@ describe('markerPosition', () => {
     expect(pos?.length).toBeUndefined()
   })
 
-  it('describes a line with its length', () => {
+  it('describes a horizontal run compactly', () => {
     const pos = markerPosition({ kind: 'line', x: 0.1, y: 0.9, x2: 0.9, y2: 0.9 }, calibration)
     expect(pos?.length).toBe('10 ft 0 in')
-    expect(pos?.summary).toContain('→')
+    expect(pos?.summary).toBe('Horizontal, 0 in above floor, from 0 in to 10 ft 0 in from left')
+  })
+
+  it('describes a vertical run compactly', () => {
+    const pos = markerPosition({ kind: 'line', x: 0.5, y: 0.9, x2: 0.5, y2: 0.5 }, calibration)
+    expect(pos?.length).toBe('4 ft 0 in')
+    expect(pos?.summary).toBe('Vertical, 5 ft 0 in from left, from 0 in to 4 ft 0 in above floor')
+  })
+
+  it('falls back to both endpoints for a diagonal run', () => {
+    const pos = markerPosition({ kind: 'line', x: 0.1, y: 0.9, x2: 0.9, y2: 0.1 }, calibration)
+    expect(pos?.summary.startsWith('From (')).toBe(true)
   })
 })
 
