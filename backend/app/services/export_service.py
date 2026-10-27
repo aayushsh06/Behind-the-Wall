@@ -21,12 +21,16 @@ TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 EXPORT_FORMAT_VERSION = 1
 
 UTILITY_LABELS = {
+    "water": "Water",
+    "gas": "Gas",
     "pipe": "Pipe",
     "wire": "Wire",
     "framing": "Framing",
     "other": "Other",
 }
 UTILITY_COLORS = {
+    "water": "#0284c7",
+    "gas": "#c2410c",
     "pipe": "#1f6feb",
     "wire": "#d4a017",
     "framing": "#8b5a2b",

@@ -1,7 +1,7 @@
 /** Shared data shapes. These mirror the backend Pydantic schemas exactly. */
 
-export type UtilityType = 'pipe' | 'wire' | 'framing' | 'other'
-export const UTILITY_TYPES: readonly UtilityType[] = ['pipe', 'wire', 'framing', 'other']
+export type UtilityType = 'water' | 'gas' | 'pipe' | 'wire' | 'framing' | 'other'
+export const UTILITY_TYPES: readonly UtilityType[] = ['water', 'gas', 'pipe', 'wire', 'framing', 'other']
 
 export type Coverage = 'full' | 'partial' | 'none'
 export const COVERAGES: readonly Coverage[] = ['full', 'partial', 'none']

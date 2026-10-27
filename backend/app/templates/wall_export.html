@@ -20,7 +20,9 @@
   .photo-wrap img { display: block; width: 100%; height: auto; border-radius: 8px; }
   .photo-wrap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   .pin { font: 700 3.2px system-ui, sans-serif; fill: #fff; text-anchor: middle; dominant-baseline: central; }
-  .pin-pipe { fill: #1f6feb; } .pin-wire { fill: #d4a017; } .pin-framing { fill: #8b5a2b; } .pin-other { fill: #6b6b6b; }
+  {% for type, color in utility_colors.items() %}
+  .pin-{{ type }} { fill: {{ color }}; }
+  {% endfor %}
   .unknown { fill: url(#hatch); stroke: #b45309; stroke-width: 0.4; }
   .unknown-label { font: 700 3px system-ui, sans-serif; fill: #7a4d00; }
   .wall-outline { fill: none; stroke: #ffffff; stroke-width: 0.5; stroke-dasharray: 1.5 1; opacity: 0.8; }

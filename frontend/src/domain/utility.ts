@@ -8,6 +8,8 @@ export interface UtilityMeta {
 }
 
 export const UTILITY_META: Record<UtilityType, UtilityMeta> = {
+  water: { label: 'Water', colorClass: 'bg-water', hex: '#0284c7' },
+  gas: { label: 'Gas', colorClass: 'bg-gas', hex: '#c2410c' },
   pipe: { label: 'Pipe', colorClass: 'bg-pipe', hex: '#1f6feb' },
   wire: { label: 'Wire', colorClass: 'bg-wire', hex: '#d4a017' },
   framing: { label: 'Framing', colorClass: 'bg-framing', hex: '#8b5a2b' },

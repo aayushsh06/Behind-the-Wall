@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field
 
 
 class UtilityType(StrEnum):
+    WATER = "water"
+    GAS = "gas"
     PIPE = "pipe"
     WIRE = "wire"
     FRAMING = "framing"
