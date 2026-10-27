@@ -53,3 +53,7 @@ make build   # production frontend build
 | Keep records | Stored server-side in SQLite + disk | R6 |
 
 See `backend/README.md` and `frontend/README.md` for per-service details.
+
+Markers distinguish Water, Gas, Pipe, Wire, Framing, and Other in capture, viewing,
+and exports. Pipe remains available for unspecified pipes and existing records;
+those records are not automatically classified as water or gas.

@@ -1,8 +1,48 @@
 import base64
 
+import pytest
 from fastapi.testclient import TestClient
 
 from tests.conftest import wall_payload
+
+
+@pytest.mark.parametrize(
+    ("utility_type", "label", "color"),
+    [("water", "Water", "#0284c7"), ("gas", "Gas", "#c2410c"), ("pipe", "Pipe", "#1f6feb")],
+)
+@pytest.mark.parametrize("kind", ["point", "line"])
+def test_pipe_categories_survive_edit_and_export(
+    client: TestClient, uploaded_photo: dict, utility_type: str, label: str, color: str, kind: str
+) -> None:
+    # Existing generic pipes can be opened and explicitly reclassified, or kept as pipes.
+    created = client.post("/api/walls", json=wall_payload(uploaded_photo["id"]))
+    assert created.status_code == 201, created.text
+    wall = created.json()
+    marker = wall["markers"][0]
+    assert marker["type"] == "pipe"
+    marker.update(type=utility_type, kind=kind)
+    if kind == "line":
+        marker.update(x2=0.8, y2=0.6)
+
+    updated = client.put(
+        f"/api/walls/{wall['id']}",
+        json=wall_payload(uploaded_photo["id"], markers=[marker]),
+    )
+    assert updated.status_code == 200, updated.text
+    saved = client.get(f"/api/walls/{wall['id']}").json()["markers"][0]
+    assert saved["id"] == marker["id"]
+    assert saved["type"] == utility_type
+    assert saved["kind"] == kind
+
+    html = client.get(f"/api/walls/{wall['id']}/export.html")
+    assert html.status_code == 200, html.text
+    assert f"<td>{label}" in html.text
+    assert f'.pin-{utility_type} {{ fill: {color}; }}' in html.text
+    assert f'class="pin-{utility_type}"' in html.text
+    if kind == "line":
+        assert f'class="seg" stroke="{color}"' in html.text
+    exported = client.get(f"/api/walls/{wall['id']}/export.json").json()["wall"]["markers"][0]
+    assert exported == saved
 
 
 def test_html_export_is_self_contained(client: TestClient, uploaded_photo: dict) -> None:

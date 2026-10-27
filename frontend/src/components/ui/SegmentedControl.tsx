@@ -23,7 +23,14 @@ export function SegmentedControl<T extends string>({
   return (
     <div>
       {label ? <span className="mb-1.5 block text-[13px] font-medium text-fg-muted">{label}</span> : null}
-      <div role="radiogroup" className="flex rounded-xl border border-line bg-surface-2 p-1">
+      <div
+        role="radiogroup"
+        aria-label={label}
+        className={cn(
+          'rounded-xl border border-line bg-surface-2 p-1',
+          options.length > 4 ? 'grid grid-cols-3 gap-1' : 'flex',
+        )}
+      >
         {options.map((option) => {
           const selected = option.value === value
           return (
