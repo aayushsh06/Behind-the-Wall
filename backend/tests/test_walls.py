@@ -60,7 +60,7 @@ def test_records_survive_new_session(client: TestClient, uploaded_photo: dict) -
 
     wall = client.post("/api/walls", json=wall_payload(uploaded_photo["id"])).json()
 
-    with TestClient(app) as reopened:
+    with TestClient(app, cookies=dict(client.cookies)) as reopened:
         again = reopened.get(f"/api/walls/{wall['id']}").json()
         assert again == wall
         photo = reopened.get(f"/api/photos/{uploaded_photo['id']}")

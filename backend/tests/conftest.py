@@ -14,15 +14,35 @@ from PIL import Image
 def data_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
     path = tmp_path_factory.mktemp("btw-data")
     os.environ["BTW_DATA_DIR"] = str(path)
+    # Tests create the accounts they need; the demo logins are covered in test_auth.py.
+    os.environ["BTW_DEMO_ACCOUNTS"] = "false"
     return path
+
+
+TEST_USER = {
+    "name": "Test Plumber",
+    "email": "plumber@example.com",
+    "password": "correct-horse",
+    "role": "tradesperson",
+}
 
 
 @pytest.fixture(scope="session")
 def client(data_dir: Path) -> Iterator[TestClient]:
+    """A client signed in as TEST_USER; its cookie jar carries the session."""
     # Import after the env var is set so settings and engine pick up the temp dir.
     from app.main import app
 
     with TestClient(app) as test_client:
+        response = test_client.post("/api/auth/register", json=TEST_USER)
+        assert response.status_code == 201, response.text
+        yield test_client
+
+
+@pytest.fixture
+def anon_client(client: TestClient) -> Iterator[TestClient]:
+    """A second client on the same app with no session cookie."""
+    with TestClient(client.app) as test_client:
         yield test_client
 
 

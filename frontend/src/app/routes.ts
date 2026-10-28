@@ -1,6 +1,9 @@
 /** Route path builders so links never hard-code strings. */
 export const routes = {
   home: () => '/',
+  welcome: () => '/welcome',
+  login: () => '/login',
+  register: () => '/register',
   newWall: () => '/walls/new',
   wall: (id: string) => `/walls/${id}`,
   editWall: (id: string) => `/walls/${id}/edit`,
@@ -9,6 +12,9 @@ export const routes = {
 
 export const routePatterns = {
   home: '/',
+  welcome: '/welcome',
+  login: '/login',
+  register: '/register',
   newWall: '/walls/new',
   wall: '/walls/:id',
   editWall: '/walls/:id/edit',

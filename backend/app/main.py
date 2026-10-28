@@ -7,13 +7,18 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.core.config import get_settings
-from app.core.database import init_db
+from app.core.database import SessionLocal, init_db
+from app.services.demo_accounts import ensure_demo_accounts
 from app.spa import mount_spa
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     init_db()
+    settings = get_settings()
+    if settings.demo_accounts:
+        with SessionLocal() as session:
+            ensure_demo_accounts(session, settings)
     yield
 
 
