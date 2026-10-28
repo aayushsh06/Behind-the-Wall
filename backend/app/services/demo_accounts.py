@@ -1,7 +1,8 @@
 """Demo logins for usability sessions and the prototype demo video.
 
-On startup each missing demo account is created. The first time they are created on an
-empty database, the sample home is loaded too, so signing in shows walls straight away.
+On startup each missing demo account is created, and existing ones get their name and
+role reset. The first time they are created on an empty database, the sample home is
+loaded too, so signing in shows walls straight away.
 """
 
 from dataclasses import dataclass
@@ -26,19 +27,25 @@ class DemoAccount:
 DEMO_PASSWORD = "demo1234"
 
 DEMO_ACCOUNTS: tuple[DemoAccount, ...] = (
-    DemoAccount("homeowner@example.com", "Jordan Rivera", Role.HOMEOWNER, DEMO_PASSWORD),
-    DemoAccount("tradesperson@example.com", "M. Alvarez", Role.TRADESPERSON, DEMO_PASSWORD),
+    DemoAccount("homeowner@example.com", "Demo Homeowner", Role.HOMEOWNER, DEMO_PASSWORD),
+    DemoAccount("tradesperson@example.com", "Demo Tradesperson", Role.TRADESPERSON, DEMO_PASSWORD),
 )
 
 
 def ensure_demo_accounts(session: Session, settings: Settings) -> list[str]:
     """Create any missing demo accounts. Returns the emails that were created."""
     users = UserRepository(session)
-    created = [
-        users.create(email=a.email, name=a.name, role=a.role, password=a.password).email
-        for a in DEMO_ACCOUNTS
-        if users.get_by_email(a.email) is None
-    ]
+    created: list[str] = []
+    for account in DEMO_ACCOUNTS:
+        user = users.get_by_email(account.email)
+        if user is None:
+            users.create(
+                email=account.email, name=account.name, role=account.role, password=account.password
+            )
+            created.append(account.email)
+        elif (user.name, user.role) != (account.name, account.role):
+            user.name, user.role = account.name, account.role
+            session.commit()
     walls = WallRepository(session)
     if created and not walls.list():
         SeedService(walls, PhotoRepository(session), PhotoStorage(settings)).seed_sample_home()

@@ -7,8 +7,8 @@ import { useLogin } from '@/hooks/useAuth'
 
 /** Matches the accounts created by the backend's demo seed (app/services/demo_accounts.py). */
 const DEMO_ACCOUNTS = [
-  { label: 'Homeowner', name: 'Jordan Rivera', email: 'homeowner@example.com' },
-  { label: 'Tradesperson', name: 'M. Alvarez', email: 'tradesperson@example.com' },
+  { label: 'Homeowner', email: 'homeowner@example.com' },
+  { label: 'Tradesperson', email: 'tradesperson@example.com' },
 ] as const
 const DEMO_PASSWORD = 'demo1234'
 
@@ -71,8 +71,8 @@ export function LoginPage() {
                 login.reset()
               }}
             >
-              <span>{account.name}</span>
-              <span className="text-xs font-medium text-fg-faint">{account.label}</span>
+              <span>{account.label}</span>
+              <span className="text-xs font-medium text-fg-faint">{account.email}</span>
             </Button>
           ))}
         </div>

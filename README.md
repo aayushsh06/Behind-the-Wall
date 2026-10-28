@@ -25,8 +25,8 @@ page can fill these in):
 
 | Account | Email | Password |
 |---|---|---|
-| Homeowner (Jordan Rivera) | `homeowner@example.com` | `demo1234` |
-| Tradesperson (M. Alvarez) | `tradesperson@example.com` | `demo1234` |
+| Demo Homeowner | `homeowner@example.com` | `demo1234` |
+| Demo Tradesperson | `tradesperson@example.com` | `demo1234` |
 
 Both are created on startup; on an empty database the six-wall sample home is loaded with
 them. Set `BTW_DEMO_ACCOUNTS=false` to skip this. If ports are taken, run

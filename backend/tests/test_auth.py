@@ -9,7 +9,7 @@ from tests.conftest import TEST_USER
 
 
 def _register(**overrides) -> dict:
-    payload = {"name": "Jordan", "email": "jordan@example.com", "password": "hunter2hunter2"}
+    payload = {"name": "Test Homeowner", "email": "owner@example.com", "password": "hunter2hunter2"}
     payload.update(overrides)
     return payload
 
@@ -21,7 +21,7 @@ def test_register_signs_in_and_defaults_to_homeowner(anon_client: TestClient) ->
 
     me = anon_client.get("/api/auth/me")
     assert me.status_code == 200
-    assert me.json()["email"] == "jordan@example.com"
+    assert me.json()["email"] == "owner@example.com"
     assert "password_hash" not in me.json()
 
 
@@ -129,3 +129,11 @@ def test_demo_accounts_are_created_once_and_load_the_sample_home(tmp_path: Path)
             assert verify_password(account.password, user.password_hash)
 
         assert ensure_demo_accounts(session, settings) == []
+
+        # A renamed demo account is put back the next time the app starts.
+        user = UserRepository(session).get_by_email(DEMO_ACCOUNTS[0].email)
+        user.name = "Someone Else"
+        session.commit()
+        ensure_demo_accounts(session, settings)
+        restored = UserRepository(session).get_by_email(DEMO_ACCOUNTS[0].email)
+        assert restored.name == DEMO_ACCOUNTS[0].name
