@@ -20,8 +20,17 @@ scripts/   dev.sh (both services, live reload) and serve.sh (single-process depl
 ```
 
 Dependencies install on first run (Python venv under `backend/.venv`, `node_modules`
-under `frontend/`). Open http://localhost:5173 and tap **Load sample home** to get the
-six-wall test home.
+under `frontend/`). Open http://localhost:5173 and sign in with a demo account (the sign-in
+page can fill these in):
+
+| Account | Email | Password |
+|---|---|---|
+| Homeowner (Jordan Rivera) | `homeowner@example.com` | `demo1234` |
+| Tradesperson (M. Alvarez) | `tradesperson@example.com` | `demo1234` |
+
+Both are created on startup; on an empty database the six-wall sample home is loaded with
+them. Set `BTW_DEMO_ACCOUNTS=false` to skip this. If ports are taken, run
+`API_PORT=8010 WEB_PORT=5180 ./scripts/dev.sh`.
 
 ## Deploy shape
 
@@ -44,6 +53,7 @@ make build   # production frontend build
 
 | Flow | Screen | Requirement |
 |---|---|---|
+| Sign in | Welcome page, create account (homeowner or tradesperson), sign in | |
 | Find a wall | Wall list grouped by room with search | R1 |
 | See what is unknown | Coverage banner + hatched "not inspected" region | R2 |
 | Read a record | Wall detail: numbered pins, items table, author, date | R3 |
@@ -53,6 +63,9 @@ make build   # production frontend build
 | Keep records | Stored server-side in SQLite + disk | R6 |
 
 See `backend/README.md` and `frontend/README.md` for per-service details.
+
+Every record endpoint requires a signed-in user (session cookie). The role labels the
+account only; every signed-in user sees and can edit the same walls.
 
 Markers distinguish Water, Gas, Pipe, Wire, Framing, and Other in capture, viewing,
 and exports. Pipe remains available for unspecified pipes and existing records;

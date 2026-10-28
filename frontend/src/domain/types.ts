@@ -100,3 +100,13 @@ export interface Photo {
   size_bytes: number
   created_at: string
 }
+
+/** Labels the account; it does not change what the account can do. */
+export type Role = 'homeowner' | 'tradesperson'
+
+export interface User {
+  id: string
+  name: string
+  email: string
+  role: Role
+}

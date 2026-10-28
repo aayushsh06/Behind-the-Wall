@@ -5,17 +5,24 @@ import { Button, EmptyState, ErrorMessage, PageHeader, Spinner } from '@/compone
 import { RoomGroup } from '@/features/find/RoomGroup'
 import { WallSearch } from '@/features/find/WallSearch'
 import { useWallSearch } from '@/features/find/useWallSearch'
+import { useSignedInUser } from '@/hooks/useAuth'
 import { useSeedSampleHome } from '@/hooks/useSeedSampleHome'
 import { useWalls } from '@/hooks/useWalls'
 
+const SUBTITLE = {
+  homeowner: 'Find a wall in your home to see what is behind it',
+  tradesperson: 'Find a wall you recorded, or record a new one',
+} as const
+
 export function WallListPage() {
+  const user = useSignedInUser()
   const wallsQuery = useWalls()
   const seed = useSeedSampleHome()
   const { query, setQuery, groups } = useWallSearch(wallsQuery.data)
 
   return (
     <>
-      <PageHeader title="Walls" subtitle="Find a wall to see what is behind it" />
+      <PageHeader title="Walls" subtitle={SUBTITLE[user.role]} />
       <div className="mb-5">
         <WallSearch value={query} onChange={setQuery} />
       </div>

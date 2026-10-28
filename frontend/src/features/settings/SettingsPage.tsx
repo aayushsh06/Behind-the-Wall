@@ -1,16 +1,31 @@
 import { Button, ErrorMessage, PageHeader, SectionHeading } from '@/components/ui'
 import { useApiHealth, useRecordStats } from '@/features/settings/useSettingsData'
+import { useLogout, useSignedInUser } from '@/hooks/useAuth'
 import { useSeedSampleHome } from '@/hooks/useSeedSampleHome'
+
+const ROLE_LABEL = { homeowner: 'Homeowner', tradesperson: 'Tradesperson' } as const
 
 export function SettingsPage() {
   const stats = useRecordStats()
   const health = useApiHealth()
   const seed = useSeedSampleHome()
+  const user = useSignedInUser()
+  const logout = useLogout()
 
   return (
     <>
       <PageHeader title="Settings" />
       <div className="flex flex-col gap-4">
+        <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+          <SectionHeading aside={ROLE_LABEL[user.role]}>Account</SectionHeading>
+          <p className="font-semibold">{user.name}</p>
+          <p className="mb-3 text-sm text-fg-muted">{user.email}</p>
+          <Button variant="secondary" fullWidth loading={logout.isPending} onClick={() => logout.mutate()}>
+            Log out
+          </Button>
+          {logout.isError ? <div className="mt-2"><ErrorMessage error={logout.error} /></div> : null}
+        </section>
+
         <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
           <SectionHeading>Records</SectionHeading>
           <dl className="grid grid-cols-2 gap-y-2 text-sm">

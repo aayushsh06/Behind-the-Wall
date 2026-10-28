@@ -6,7 +6,7 @@ JPEG files under `data/`) and produces single-wall handoff exports.
 ```
 app/
   core/           settings, database session, id helpers
-  models/         SQLAlchemy tables (walls, photos)
+  models/         SQLAlchemy tables (walls, photos, users, sessions)
   schemas/        Pydantic request/response shapes
   repositories/   persistence operations, one class per table
   services/       photo processing, export rendering, sample-home seed
@@ -29,6 +29,9 @@ variables (see `app/core/config.py`).
 
 | Method | Path | Purpose |
 |---|---|---|
+| POST | `/api/auth/register` | create an account and sign in |
+| POST | `/api/auth/login` / `/api/auth/logout` | start or end a session (cookie) |
+| GET | `/api/auth/me` | the signed-in user |
 | GET | `/api/walls` | list wall summaries |
 | POST | `/api/walls` | create a wall |
 | GET/PUT/DELETE | `/api/walls/{id}` | read, replace, delete a wall |
@@ -38,6 +41,10 @@ variables (see `app/core/config.py`).
 | GET | `/api/walls/{id}/export.html` | self-contained handoff page |
 | GET | `/api/walls/{id}/export.json` | record plus photo for re-import |
 | POST | `/api/seed/sample-home` | load the six-wall sample home |
+
+Everything except `/api/health` and `/api/auth/*` returns 401 without a session.
+Passwords are hashed with scrypt; demo accounts are created on startup
+(`app/services/demo_accounts.py`, disable with `BTW_DEMO_ACCOUNTS=false`).
 
 ## Sample home photos
 

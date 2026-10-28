@@ -5,16 +5,17 @@ import { PageHeader } from '@/components/ui'
 import { useKnownRooms } from '@/features/capture/useKnownRooms'
 import { WallForm } from '@/features/capture/WallForm'
 import { emptyDraft } from '@/features/capture/wallDraft'
+import { useSignedInUser } from '@/hooks/useAuth'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { useCreateWall } from '@/hooks/useWallMutations'
-
-const LAST_AUTHOR_KEY = 'btw.lastAuthor'
 
 export function NewWallPage() {
   const navigate = useNavigate()
   const createWall = useCreateWall()
   const knownRooms = useKnownRooms()
-  const [lastAuthor, setLastAuthor] = useLocalStorage(LAST_AUTHOR_KEY, '')
+  const user = useSignedInUser()
+  // Starts as the account name; remembers an edit such as a company name, per account.
+  const [lastAuthor, setLastAuthor] = useLocalStorage(`btw.lastAuthor.${user.id}`, user.name)
 
   return (
     <>

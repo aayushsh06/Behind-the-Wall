@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     photo_jpeg_quality: int = 85
     max_upload_bytes: int = 25 * 1024 * 1024
 
+    session_cookie_name: str = "btw_session"
+    session_days: int = 30
+    # Set true when served over HTTPS so the browser only sends the cookie securely.
+    session_cookie_secure: bool = False
+    # Create the demo logins on startup (see app/services/demo_accounts.py).
+    demo_accounts: bool = True
+
     @property
     def photos_dir(self) -> Path:
         return self.data_dir / "photos"
