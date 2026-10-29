@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { exportsApi } from '@/api/exports'
 import type { ExportFormat } from '@/api/exports'
-import { canShareFiles, downloadUrl, shareFiles } from '@/lib/share'
+import { shareOrDownload } from '@/lib/share'
 
 export type ShareStatus = 'idle' | 'working' | 'shared' | 'downloaded' | 'error'
 
@@ -16,13 +16,8 @@ export function useShareWall(wallId: string, title: string) {
     setError(null)
     try {
       const file = await exportsApi.fetchFile(wallId, format)
-      if (canShareFiles([file])) {
-        const result = await shareFiles([file], title)
-        setStatus(result === 'shared' ? 'shared' : 'idle')
-        return
-      }
-      downloadUrl(exportsApi.url(wallId, format, true), file.name)
-      setStatus('downloaded')
+      const result = await shareOrDownload(file, title, exportsApi.url(wallId, format, true))
+      setStatus(result === 'cancelled' ? 'idle' : result)
     } catch (err) {
       setError(err)
       setStatus('error')
