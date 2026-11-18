@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
 import { routes } from '@/app/routes'
@@ -10,11 +10,17 @@ import { WallActions } from '@/features/find/WallActions'
 import { WallPhoto } from '@/features/find/WallPhoto'
 import { useWall } from '@/hooks/useWall'
 import { formatDate } from '@/lib/format'
+import { useHome } from '@/features/homes/homeContext'
 
 export function WallDetailPage() {
   const { id } = useParams<{ id: string }>()
   const wallQuery = useWall(id)
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null)
+  const { home, homes, selectHome } = useHome()
+  const wallHomeId = wallQuery.data?.home_id
+  useEffect(() => {
+    if (wallHomeId && wallHomeId !== home?.id) selectHome(wallHomeId)
+  }, [wallHomeId, home?.id, selectHome])
 
   if (wallQuery.isPending) return <Spinner label="Loading wall" />
   if (wallQuery.isError) return <ErrorMessage error={wallQuery.error} />
@@ -76,7 +82,7 @@ export function WallDetailPage() {
         ) : null}
       </div>
 
-      <WallActions wallId={wall.id} title={`${wall.room} · ${wall.label}`} />
+      <WallActions wallId={wall.id} title={`${wall.room} · ${wall.label}`} canEdit={homes.some((item) => item.id === wall.home_id && item.permission !== 'viewer')} />
     </>
   )
 }

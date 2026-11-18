@@ -74,6 +74,7 @@ export type MarkerInput = Omit<Marker, 'id'> & { id?: string }
 
 export interface Wall extends Omit<WallInput, 'markers'> {
   id: string
+  home_id: string
   schema_version: number
   markers: Marker[]
   created_at: string
@@ -82,6 +83,7 @@ export interface Wall extends Omit<WallInput, 'markers'> {
 
 export interface WallSummary {
   id: string
+  home_id: string
   room: string
   label: string
   author: string
@@ -101,7 +103,7 @@ export interface Photo {
   created_at: string
 }
 
-/** Labels the account; it does not change what the account can do. */
+/** Homeowners create homes; access to their records comes from home membership. */
 export type Role = 'homeowner' | 'tradesperson'
 
 export interface User {

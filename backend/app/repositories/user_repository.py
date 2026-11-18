@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.ids import new_id
 from app.core.security import hash_password, hash_token, new_session_token
-from app.models import AuthSession, User
+from app.models import AuthSession, Home, User
 
 
 def _as_utc(moment: datetime) -> datetime:
@@ -25,7 +25,9 @@ class UserRepository:
         stmt = select(User).where(func.lower(User.email) == email.strip().lower())
         return self._session.scalars(stmt).first()
 
-    def create(self, *, email: str, name: str, role: str, password: str) -> User:
+    def create(
+        self, *, email: str, name: str, role: str, password: str, create_home: bool = True
+    ) -> User:
         user = User(
             id=new_id(),
             email=email.strip().lower(),
@@ -34,6 +36,9 @@ class UserRepository:
             password_hash=hash_password(password),
         )
         self._session.add(user)
+        self._session.flush()
+        if role == "homeowner" and create_home:
+            self._session.add(Home(id=new_id(), name="My home", owner_id=user.id))
         self._session.commit()
         self._session.refresh(user)
         return user

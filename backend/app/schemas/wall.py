@@ -47,6 +47,7 @@ class WallRead(WallBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
+    home_id: str | None
     schema_version: int
     created_at: datetime
     updated_at: datetime
@@ -58,6 +59,7 @@ class WallSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
+    home_id: str | None
     room: str
     label: str
     author: str

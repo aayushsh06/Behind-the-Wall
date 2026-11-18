@@ -13,10 +13,18 @@ class PhotoRepository:
         return self._session.get(Photo, photo_id)
 
     def create(
-        self, *, photo_id: str, content_type: str, width: int, height: int, size_bytes: int
+        self,
+        *,
+        photo_id: str,
+        content_type: str,
+        width: int,
+        height: int,
+        size_bytes: int,
+        home_id: str | None = None,
     ) -> Photo:
         photo = Photo(
             id=photo_id,
+            home_id=home_id,
             content_type=content_type,
             width=width,
             height=height,
@@ -28,7 +36,14 @@ class PhotoRepository:
         return photo
 
     def upsert(
-        self, *, photo_id: str, content_type: str, width: int, height: int, size_bytes: int
+        self,
+        *,
+        photo_id: str,
+        content_type: str,
+        width: int,
+        height: int,
+        size_bytes: int,
+        home_id: str | None = None,
     ) -> Photo:
         """Create the row or refresh its metadata when the image bytes were replaced."""
         existing = self.get(photo_id)
@@ -39,6 +54,7 @@ class PhotoRepository:
                 width=width,
                 height=height,
                 size_bytes=size_bytes,
+                home_id=home_id,
             )
         existing.content_type = content_type
         existing.width = width

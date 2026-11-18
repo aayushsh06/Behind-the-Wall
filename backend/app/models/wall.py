@@ -19,6 +19,7 @@ class Wall(Base):
     __tablename__ = "walls"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    home_id: Mapped[str | None] = mapped_column(ForeignKey("homes.id"), nullable=True, index=True)
     schema_version: Mapped[int] = mapped_column(default=SCHEMA_VERSION, nullable=False)
 
     room: Mapped[str] = mapped_column(String(120), nullable=False, index=True)

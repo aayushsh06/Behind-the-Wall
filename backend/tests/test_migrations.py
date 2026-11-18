@@ -10,6 +10,6 @@ def test_ensure_columns_adds_missing_column(tmp_path: Path) -> None:
     with engine.begin() as conn:
         conn.execute(text("CREATE TABLE walls (id TEXT PRIMARY KEY, room TEXT)"))
 
-    assert ensure_columns(engine) == ["walls.calibration"]
+    assert ensure_columns(engine) == ["walls.calibration", "walls.home_id"]
     assert "calibration" in {c["name"] for c in inspect(engine).get_columns("walls")}
     assert ensure_columns(engine) == []

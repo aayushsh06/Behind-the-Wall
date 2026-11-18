@@ -1,8 +1,10 @@
+import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { photosApi } from '@/api/photos'
 import { routes } from '@/app/routes'
-import { ErrorMessage, PageHeader, Spinner } from '@/components/ui'
+import { EmptyState, ErrorMessage, PageHeader, Spinner } from '@/components/ui'
+import { useHome } from '@/features/homes/homeContext'
 import { useKnownRooms } from '@/features/capture/useKnownRooms'
 import { WallForm } from '@/features/capture/WallForm'
 import { draftFromWall } from '@/features/capture/wallDraft'
@@ -17,12 +19,21 @@ export function EditWallPage() {
   const photoQuery = usePhoto(wallQuery.data?.photo_id)
   const updateWall = useUpdateWall(id)
   const knownRooms = useKnownRooms()
+  const { home, homes, selectHome } = useHome()
+  const wallHomeId = wallQuery.data?.home_id
+  useEffect(() => {
+    if (wallHomeId && wallHomeId !== home?.id) selectHome(wallHomeId)
+  }, [wallHomeId, home?.id, selectHome])
 
   if (wallQuery.isPending) return <Spinner label="Loading wall" />
   if (wallQuery.isError) return <ErrorMessage error={wallQuery.error} />
   if (wallQuery.data.photo_id && photoQuery.isPending) return <Spinner label="Loading photo" />
 
   const wall = wallQuery.data
+  if (homes.find((item) => item.id === wall.home_id)?.permission === 'viewer') {
+    return <EmptyState title="This record has view-only access" description="Ask the homeowner for edit access to make changes." />
+  }
+  if (home?.id !== wall.home_id) return <Spinner label="Loading home" />
   const size = photoQuery.data ? { width: photoQuery.data.width, height: photoQuery.data.height } : null
 
   return (

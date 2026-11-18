@@ -4,7 +4,14 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request, Response, UploadFile, status
 
-from app.api.deps import PhotoRepoDep, PhotoStorageDep, SettingsDep
+from app.api.deps import (
+    CurrentUserDep,
+    HomeRepoDep,
+    PhotoRepoDep,
+    PhotoStorageDep,
+    SettingsDep,
+    require_photo,
+)
 from app.core.ids import new_id
 from app.schemas import PhotoRead
 from app.services.photo_storage import JPEG_CONTENT_TYPE, InvalidImageError
@@ -14,8 +21,15 @@ router = APIRouter(prefix="/photos", tags=["photos"])
 
 @router.post("", response_model=PhotoRead, status_code=status.HTTP_201_CREATED)
 async def upload_photo(
-    file: UploadFile, photos: PhotoRepoDep, storage: PhotoStorageDep, settings: SettingsDep
+    file: UploadFile,
+    photos: PhotoRepoDep,
+    storage: PhotoStorageDep,
+    settings: SettingsDep,
+    homes: HomeRepoDep,
+    user: CurrentUserDep,
+    home_id: str | None = None,
 ) -> PhotoRead:
+    home = homes.resolve(home_id, user, write=True)
     raw = await file.read(settings.max_upload_bytes + 1)
     if len(raw) > settings.max_upload_bytes:
         raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "Photo is too large")
@@ -34,25 +48,45 @@ async def upload_photo(
         width=processed.width,
         height=processed.height,
         size_bytes=len(processed.data),
+        home_id=home.id,
     )
     return PhotoRead.model_validate(photo)
 
 
 @router.get("/{photo_id}/meta", response_model=PhotoRead)
-def read_photo_meta(photo_id: str, photos: PhotoRepoDep) -> PhotoRead:
-    photo = photos.get(photo_id)
-    if photo is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Photo not found")
+def read_photo_meta(
+    photo_id: str,
+    photos: PhotoRepoDep,
+    homes: HomeRepoDep,
+    user: CurrentUserDep,
+) -> PhotoRead:
+    photo = require_photo(photo_id, photos, homes, user)
     return PhotoRead.model_validate(photo)
 
 
 @router.get("/{photo_id}")
-def read_photo(photo_id: str, request: Request, storage: PhotoStorageDep) -> Response:
+def read_photo(
+    photo_id: str,
+    request: Request,
+    storage: PhotoStorageDep,
+    photos: PhotoRepoDep,
+    homes: HomeRepoDep,
+    user: CurrentUserDep,
+) -> Response:
+    require_photo(photo_id, photos, homes, user)
     return _image_response(request, storage.path_for(photo_id))
 
 
 @router.get("/{photo_id}/thumbnail")
-def read_thumbnail(photo_id: str, request: Request, storage: PhotoStorageDep) -> Response:
+def read_thumbnail(
+    photo_id: str,
+    request: Request,
+    storage: PhotoStorageDep,
+    photos: PhotoRepoDep,
+    homes: HomeRepoDep,
+    user: CurrentUserDep,
+) -> Response:
+    require_photo(photo_id, photos, homes, user)
     thumb = storage.thumbnail_path_for(photo_id)
     return _image_response(request, thumb if thumb.exists() else storage.path_for(photo_id))
 

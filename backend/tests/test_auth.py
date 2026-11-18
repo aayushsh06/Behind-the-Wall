@@ -69,6 +69,14 @@ def test_login_failure_does_not_reveal_which_part_was_wrong(anon_client: TestCli
 @pytest.mark.parametrize(
     ("method", "path"),
     [
+        ("get", "/api/homes"),
+        ("post", "/api/homes"),
+        ("post", "/api/homes/accept-invitation"),
+        ("post", "/api/homes/any/invitations"),
+        ("get", "/api/homes/any/invitations"),
+        ("delete", "/api/homes/any/invitations/any"),
+        ("get", "/api/homes/any/members"),
+        ("delete", "/api/homes/any/members/any"),
         ("get", "/api/walls"),
         ("post", "/api/walls"),
         ("get", "/api/walls/any"),

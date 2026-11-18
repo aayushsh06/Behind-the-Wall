@@ -10,10 +10,10 @@ const withVersion = (path: string, version?: string) =>
   version ? `${path}?v=${encodeURIComponent(version)}` : path
 
 export const photosApi = {
-  upload: (file: File | Blob, filename = 'photo.jpg') => {
+  upload: (file: File | Blob, homeId: string, filename = 'photo.jpg') => {
     const form = new FormData()
     form.append('file', file, filename)
-    return http.postForm<Photo>('/photos', form)
+    return http.postForm<Photo>(`/photos?home_id=${encodeURIComponent(homeId)}`, form)
   },
   meta: (id: string) => http.get<Photo>(`/photos/${id}/meta`),
   url: (id: string, version?: string) => withVersion(apiUrl(`/photos/${id}`), version),
