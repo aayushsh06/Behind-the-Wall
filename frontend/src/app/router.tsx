@@ -12,6 +12,8 @@ import { NewWallPage } from '@/features/capture/NewWallPage'
 import { WallDetailPage } from '@/features/find/WallDetailPage'
 import { WallListPage } from '@/features/find/WallListPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
+import { HomesPage } from '@/features/homes/HomesPage'
+import { JoinHomePage } from '@/features/homes/JoinHomePage'
 
 export const router = createBrowserRouter([
   {
@@ -30,6 +32,8 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: routePatterns.home, element: <WallListPage /> },
+      { path: routePatterns.homes, element: <HomesPage /> },
+      { path: routePatterns.join, element: <JoinHomePage /> },
       { path: routePatterns.newWall, element: <NewWallPage /> },
       { path: routePatterns.wall, element: <WallDetailPage /> },
       { path: routePatterns.editWall, element: <EditWallPage /> },

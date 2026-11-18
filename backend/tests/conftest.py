@@ -23,7 +23,7 @@ TEST_USER = {
     "name": "Test Plumber",
     "email": "plumber@example.com",
     "password": "correct-horse",
-    "role": "tradesperson",
+    "role": "homeowner",
 }
 
 

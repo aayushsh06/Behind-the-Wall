@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -12,6 +12,7 @@ class Photo(Base):
     __tablename__ = "photos"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    home_id: Mapped[str | None] = mapped_column(ForeignKey("homes.id"), nullable=True, index=True)
     content_type: Mapped[str] = mapped_column(String(64), nullable=False)
     width: Mapped[int] = mapped_column(Integer, nullable=False)
     height: Mapped[int] = mapped_column(Integer, nullable=False)

@@ -10,6 +10,7 @@ photo. Two walls share one photo through different crops.
 
 from dataclasses import dataclass
 from datetime import date
+from hashlib import sha256
 from io import BytesIO
 from pathlib import Path
 
@@ -31,6 +32,13 @@ from app.services.photo_storage import JPEG_CONTENT_TYPE, PhotoStorage
 
 SAMPLE_ASSETS_DIR = Path(__file__).resolve().parent.parent.parent / "assets" / "sample"
 SAMPLE_PREFIX = "sample"
+DEMO_HOME_ID = "demo-home"
+
+
+def sample_id(home_id: str, original_id: str) -> str:
+    if home_id == DEMO_HOME_ID:
+        return original_id
+    return sha256(f"{home_id}:{original_id}".encode()).hexdigest()[:32]
 
 
 class SampleAssetMissingError(FileNotFoundError):
@@ -305,11 +313,11 @@ class SeedService:
         self._photos = photos
         self._storage = storage
 
-    def seed_sample_home(self) -> list[str]:
+    def seed_sample_home(self, home_id: str) -> list[str]:
         """Create or refresh every sample wall and photo. Returns the wall IDs touched."""
         ids: list[str] = []
         for sample in SAMPLE_WALLS:
-            photo_id = self._write_photo(sample) if sample.photo else None
+            photo_id = self._write_photo(sample, home_id) if sample.photo else None
             data = WallCreate(
                 room=sample.room,
                 label=sample.label,
@@ -323,22 +331,24 @@ class SeedService:
                 markers=list(sample.markers),
                 notes=sample.notes,
             )
-            wall = self._walls.upsert(sample.wall_id, data)
+            wall = self._walls.upsert(sample_id(home_id, sample.wall_id), data, home_id=home_id)
             ids.append(wall.id)
         return ids
 
-    def _write_photo(self, sample: SampleWall) -> str:
+    def _write_photo(self, sample: SampleWall, home_id: str) -> str:
         assert sample.photo is not None
         raw = load_sample_image(sample.photo)
-        processed = self._storage.save(sample.photo_id, raw)
+        photo_id = sample_id(home_id, sample.photo_id)
+        processed = self._storage.save(photo_id, raw)
         self._photos.upsert(
-            photo_id=sample.photo_id,
+            photo_id=photo_id,
             content_type=JPEG_CONTENT_TYPE,
             width=processed.width,
             height=processed.height,
             size_bytes=len(processed.data),
+            home_id=home_id,
         )
-        return sample.photo_id
+        return photo_id
 
 
 def load_sample_image(photo: SamplePhoto) -> bytes:

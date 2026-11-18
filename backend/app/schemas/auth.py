@@ -9,7 +9,7 @@ _EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 class Role(StrEnum):
-    """Labels the account. It does not change what the account can do."""
+    """Homeowners create homes; record access is granted through home membership."""
 
     HOMEOWNER = "homeowner"
     TRADESPERSON = "tradesperson"

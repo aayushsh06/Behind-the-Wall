@@ -1,6 +1,7 @@
 /** Route path builders so links never hard-code strings. */
 export const routes = {
   home: () => '/',
+  homes: () => '/homes',
   welcome: () => '/welcome',
   login: () => '/login',
   register: () => '/register',
@@ -12,6 +13,8 @@ export const routes = {
 
 export const routePatterns = {
   home: '/',
+  homes: '/homes',
+  join: '/join/:token',
   welcome: '/welcome',
   login: '/login',
   register: '/register',

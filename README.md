@@ -64,8 +64,30 @@ make build   # production frontend build
 
 See `backend/README.md` and `frontend/README.md` for per-service details.
 
-Every record endpoint requires a signed-in user (session cookie). The role labels the
-account only; every signed-in user sees and can edit the same walls.
+Every record endpoint requires a signed-in user (session cookie). Homeowners receive
+a private home at registration and can create more from **Manage homes**. Contractors
+join a home through a single-use invitation link with view or edit access. Viewers can
+read and export records; editors can also upload photos and create, edit, or delete
+walls. Only the owner manages invitations and members. Links expire after seven days,
+and owners can revoke pending invitations or remove a member at any time.
+
+Home selection scopes wall lists, photo uploads, and sample data. Direct wall, photo,
+thumbnail, metadata, and export URLs also check membership on the server. Each home's
+sample records have separate IDs, so reloading them cannot reset another home's data.
+The demo accounts share only the sample home through an explicit edit grant.
+
+### Upgrading existing data
+
+The schema update preserves existing records and adds nullable `home_id` columns.
+Known sample records are assigned to the demo home when demo accounts are enabled.
+Other older walls and photos had no recorded owner, so they are retained with a null
+home ID and hidden from accounts. Before using real legacy data, an administrator must
+verify its owner and assign each wall and its photo to that owner's home in the database.
+Do not assign all legacy records to the first person who signs in.
+
+Home membership does not recall previously downloaded exports. Deploy with persistent
+storage for `backend/data/`, HTTPS, `BTW_SESSION_COOKIE_SECURE=true`, and
+`BTW_DEMO_ACCOUNTS=false` when using private data instead of the demonstration accounts.
 
 Markers distinguish Water, Gas, Pipe, Wire, Framing, and Other in capture, viewing,
 and exports. Pipe remains available for unspecified pipes and existing records;

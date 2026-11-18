@@ -7,7 +7,11 @@ data are appended here so existing records keep working without a migration tool
 from sqlalchemy import Engine, inspect, text
 
 # (table, column, DDL type) for every column added after the first release.
-ADDED_COLUMNS: tuple[tuple[str, str, str], ...] = (("walls", "calibration", "JSON"),)
+ADDED_COLUMNS: tuple[tuple[str, str, str], ...] = (
+    ("walls", "calibration", "JSON"),
+    ("walls", "home_id", "VARCHAR(32) REFERENCES homes(id)"),
+    ("photos", "home_id", "VARCHAR(32) REFERENCES homes(id)"),
+)
 
 
 def ensure_columns(engine: Engine) -> list[str]:

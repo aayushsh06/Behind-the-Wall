@@ -9,10 +9,11 @@ import { useDeleteWall } from '@/hooks/useWallMutations'
 interface WallActionsProps {
   wallId: string
   title: string
+  canEdit: boolean
 }
 
 /** Sticky action bar on the record view: share (primary), edit, delete with inline confirm. */
-export function WallActions({ wallId, title }: WallActionsProps) {
+export function WallActions({ wallId, title, canEdit }: WallActionsProps) {
   const navigate = useNavigate()
   const deleteWall = useDeleteWall()
   const [shareOpen, setShareOpen] = useState(false)
@@ -39,12 +40,12 @@ export function WallActions({ wallId, title }: WallActionsProps) {
             </>
           ) : (
             <>
-              <Button variant="ghost" aria-label="Delete wall" onClick={() => setConfirmDelete(true)}>
+              {canEdit ? <Button variant="ghost" aria-label="Delete wall" onClick={() => setConfirmDelete(true)}>
                 Delete
-              </Button>
-              <Link to={routes.editWall(wallId)} className="contents">
+              </Button> : null}
+              {canEdit ? <Link to={routes.editWall(wallId)} className="contents">
                 <Button variant="secondary">Edit</Button>
-              </Link>
+              </Link> : null}
               <Button fullWidth onClick={() => setShareOpen(true)}>
                 Share this wall
               </Button>

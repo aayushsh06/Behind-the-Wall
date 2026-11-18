@@ -1,6 +1,8 @@
 /** Central registry of query keys so invalidation stays consistent. */
 export const queryKeys = {
   me: ['me'] as const,
+  homes: ['homes'] as const,
+  wallsForHome: (id: string | null) => ['walls', 'home', id] as const,
   walls: ['walls'] as const,
   wall: (id: string) => ['walls', id] as const,
   photo: (id: string) => ['photos', id] as const,

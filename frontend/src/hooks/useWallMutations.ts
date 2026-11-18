@@ -3,11 +3,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { wallsApi } from '@/api/walls'
 import type { WallInput } from '@/domain/types'
 import { queryKeys } from '@/hooks/queryKeys'
+import { useHome } from '@/features/homes/homeContext'
 
 export function useCreateWall() {
+  const { home } = useHome()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: WallInput) => wallsApi.create(input),
+    mutationFn: (input: WallInput) => {
+      if (!home) throw new Error('Choose a home first')
+      return wallsApi.create(input, home.id)
+    },
     onSuccess: (wall) => {
       queryClient.setQueryData(queryKeys.wall(wall.id), wall)
       void queryClient.invalidateQueries({ queryKey: queryKeys.walls })

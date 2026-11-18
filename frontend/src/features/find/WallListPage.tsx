@@ -8,6 +8,7 @@ import { useWallSearch } from '@/features/find/useWallSearch'
 import { useSignedInUser } from '@/hooks/useAuth'
 import { useSeedSampleHome } from '@/hooks/useSeedSampleHome'
 import { useWalls } from '@/hooks/useWalls'
+import { useHome } from '@/features/homes/homeContext'
 
 const SUBTITLE = {
   homeowner: 'Find a wall in your home to see what is behind it',
@@ -15,14 +16,18 @@ const SUBTITLE = {
 } as const
 
 export function WallListPage() {
+  const { home } = useHome()
   const user = useSignedInUser()
   const wallsQuery = useWalls()
   const seed = useSeedSampleHome()
   const { query, setQuery, groups } = useWallSearch(wallsQuery.data)
 
+  if (!home) return <EmptyState title="No home access yet" description="Ask a homeowner for an invitation link to view or record their walls." />
+  const canEdit = home.permission !== 'viewer'
+
   return (
     <>
-      <PageHeader title="Walls" subtitle={SUBTITLE[user.role]} />
+      <PageHeader title="Walls" subtitle={canEdit ? SUBTITLE[user.role] : 'View the wall records shared with you'} />
       <div className="mb-5">
         <WallSearch value={query} onChange={setQuery} />
       </div>
@@ -33,9 +38,9 @@ export function WallListPage() {
       {wallsQuery.isSuccess && wallsQuery.data.length === 0 ? (
         <EmptyState
           title="No walls recorded yet"
-          description="Record a wall when it is open, or load the sample home to explore."
+          description={canEdit ? 'Record a wall when it is open, or load sample records to explore.' : 'The homeowner has not added any wall records yet.'}
           action={
-            <div className="flex flex-col gap-2">
+            canEdit ? <div className="flex flex-col gap-2">
               <Link to={routes.newWall()}>
                 <Button fullWidth>Record a wall</Button>
               </Link>
@@ -43,7 +48,7 @@ export function WallListPage() {
                 Load sample home
               </Button>
               {seed.isError ? <ErrorMessage error={seed.error} /> : null}
-            </div>
+            </div> : undefined
           }
         />
       ) : null}

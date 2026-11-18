@@ -2,6 +2,7 @@ import { Button, ErrorMessage, PageHeader, SectionHeading } from '@/components/u
 import { useApiHealth, useRecordStats } from '@/features/settings/useSettingsData'
 import { useLogout, useSignedInUser } from '@/hooks/useAuth'
 import { useSeedSampleHome } from '@/hooks/useSeedSampleHome'
+import { useHome } from '@/features/homes/homeContext'
 
 const ROLE_LABEL = { homeowner: 'Homeowner', tradesperson: 'Tradesperson' } as const
 
@@ -11,6 +12,7 @@ export function SettingsPage() {
   const seed = useSeedSampleHome()
   const user = useSignedInUser()
   const logout = useLogout()
+  const { home } = useHome()
 
   return (
     <>
@@ -43,8 +45,8 @@ export function SettingsPage() {
           </dl>
         </section>
 
-        <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
-          <SectionHeading>Sample data</SectionHeading>
+        {home && home.permission !== 'viewer' ? <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+          <SectionHeading>Sample data for {home.name}</SectionHeading>
           <p className="mb-3 text-sm leading-relaxed text-fg-muted">
             Loads six labeled walls for usability sessions. Running it again resets those six walls without touching
             others.
@@ -54,7 +56,7 @@ export function SettingsPage() {
           </Button>
           {seed.isSuccess ? <p className="mt-2 text-center text-sm text-emerald-300">Sample home loaded.</p> : null}
           {seed.isError ? <div className="mt-2"><ErrorMessage error={seed.error} /></div> : null}
-        </section>
+        </section> : null}
 
         <p className="text-center text-xs text-fg-faint">Behind the Wall prototype · records stay on this server only.</p>
       </div>

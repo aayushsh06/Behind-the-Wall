@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 
 import { routes } from '@/app/routes'
 import { cn } from '@/lib/cn'
+import { useHome } from '@/features/homes/homeContext'
 
 interface NavItem {
   to: string
@@ -45,6 +46,7 @@ const ITEMS: NavItem[] = [
 ]
 
 export function BottomNav() {
+  const { home } = useHome()
   return (
     <nav
       aria-label="Primary"
@@ -52,7 +54,7 @@ export function BottomNav() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <ul className="mx-auto flex max-w-lg">
-        {ITEMS.map((item) => (
+        {ITEMS.filter((item) => item.label !== 'Add wall' || (home && home.permission !== 'viewer')).map((item) => (
           <li key={item.to} className="flex-1">
             <NavLink
               to={item.to}

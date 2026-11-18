@@ -9,8 +9,9 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_session
-from app.models import User
+from app.models import Photo, User, Wall
 from app.repositories import PhotoRepository, UserRepository, WallRepository
+from app.repositories.home_repository import HomeRepository
 from app.services.export_service import ExportService
 from app.services.photo_storage import PhotoStorage
 from app.services.seed_service import SeedService
@@ -48,6 +49,38 @@ def get_current_user(request: Request, users: UserRepoDep, settings: SettingsDep
 
 
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
+
+
+def get_home_repository(session: SessionDep) -> HomeRepository:
+    return HomeRepository(session)
+
+
+HomeRepoDep = Annotated[HomeRepository, Depends(get_home_repository)]
+
+
+def require_wall(
+    wall_id: str,
+    walls: WallRepository,
+    homes: HomeRepository,
+    user: User,
+    *,
+    write: bool = False,
+) -> Wall:
+    wall = walls.get(wall_id)
+    if wall is None or wall.home_id is None:
+        raise HTTPException(404, "Wall not found")
+    homes.require(wall.home_id, user, write=write)
+    return wall
+
+
+def require_photo(
+    photo_id: str, photos: PhotoRepository, homes: HomeRepository, user: User
+) -> Photo:
+    photo = photos.get(photo_id)
+    if photo is None or photo.home_id is None:
+        raise HTTPException(404, "Photo not found")
+    homes.require(photo.home_id, user)
+    return photo
 
 
 def get_photo_storage(settings: SettingsDep) -> PhotoStorage:

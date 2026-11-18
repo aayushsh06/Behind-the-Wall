@@ -2,7 +2,7 @@
 
 from collections.abc import Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import get_settings
@@ -31,6 +31,18 @@ def init_db() -> None:
 
     Base.metadata.create_all(bind=engine)
     ensure_columns(engine)
+    # Existing homeowners also need a home after upgrading from shared records.
+    from app.core.ids import new_id
+    from app.models import Home, User
+
+    with SessionLocal() as session:
+        owners = session.scalars(select(User).where(User.role == "homeowner"))
+        for user in owners:
+            if get_settings().demo_accounts and user.email == "homeowner@example.com":
+                continue
+            if session.scalar(select(Home.id).where(Home.owner_id == user.id)) is None:
+                session.add(Home(id=new_id(), name="My home", owner_id=user.id))
+        session.commit()
 
 
 def get_session() -> Generator[Session, None, None]:

@@ -14,8 +14,10 @@ class WallRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def list(self) -> list[Wall]:
+    def list(self, home_id: str | None = None) -> list[Wall]:
         stmt = select(Wall).order_by(Wall.room, Wall.label)
+        if home_id is not None:
+            stmt = stmt.where(Wall.home_id == home_id)
         return list(self._session.scalars(stmt))
 
     def get(self, wall_id: str) -> Wall | None:
@@ -25,8 +27,10 @@ class WallRepository:
         stmt = select(Wall).where(Wall.photo_id == photo_id)
         return list(self._session.scalars(stmt))
 
-    def create(self, data: WallCreate, wall_id: str | None = None) -> Wall:
-        wall = Wall(id=wall_id or new_id(), **self._to_columns(data))
+    def create(
+        self, data: WallCreate, wall_id: str | None = None, home_id: str | None = None
+    ) -> Wall:
+        wall = Wall(id=wall_id or new_id(), home_id=home_id, **self._to_columns(data))
         self._session.add(wall)
         self._session.commit()
         self._session.refresh(wall)
@@ -39,10 +43,10 @@ class WallRepository:
         self._session.refresh(wall)
         return wall
 
-    def upsert(self, wall_id: str, data: WallCreate) -> Wall:
+    def upsert(self, wall_id: str, data: WallCreate, home_id: str | None = None) -> Wall:
         existing = self.get(wall_id)
         if existing is None:
-            return self.create(data, wall_id=wall_id)
+            return self.create(data, wall_id=wall_id, home_id=home_id)
         return self.update(existing, WallUpdate.model_validate(data.model_dump()))
 
     def delete(self, wall: Wall) -> None:
