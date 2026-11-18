@@ -1,7 +1,16 @@
 /** Thin wrappers around the Web Share API with a download fallback. */
 
 export function canShareFiles(files: File[]): boolean {
-  return typeof navigator.canShare === 'function' && navigator.canShare({ files })
+  try {
+    return (
+      typeof navigator !== 'undefined' &&
+      typeof navigator.share === 'function' &&
+      typeof navigator.canShare === 'function' &&
+      navigator.canShare({ files })
+    )
+  } catch {
+    return false
+  }
 }
 
 export async function shareFiles(files: File[], title: string): Promise<'shared' | 'cancelled'> {
@@ -12,6 +21,21 @@ export async function shareFiles(files: File[], title: string): Promise<'shared'
     if (error instanceof DOMException && error.name === 'AbortError') return 'cancelled'
     throw error
   }
+}
+
+export type ShareResult = 'shared' | 'cancelled' | 'downloaded'
+
+/** Native sharing can be rejected even after a positive capability check. */
+export async function shareOrDownload(file: File, title: string, url: string): Promise<ShareResult> {
+  if (canShareFiles([file])) {
+    try {
+      return await shareFiles([file], title)
+    } catch {
+      // Permission, activation, or platform failures can still fall back to a download.
+    }
+  }
+  downloadUrl(url, file.name)
+  return 'downloaded'
 }
 
 /** Trigger a browser download by navigating a hidden anchor to the URL. */
