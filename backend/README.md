@@ -38,9 +38,13 @@ variables (see `app/core/config.py`).
 | POST | `/api/photos` | upload a photo (multipart `file`) |
 | GET | `/api/photos/{id}` | full-size JPEG |
 | GET | `/api/photos/{id}/thumbnail` | thumbnail JPEG |
+| GET | `/api/walls/{id}/export.pdf` | annotated PDF of the wall (latest revision) |
 | GET | `/api/walls/{id}/export.html` | self-contained handoff page |
 | GET | `/api/walls/{id}/export.json` | record plus photo for re-import |
-| POST | `/api/seed/sample-home` | load the six-wall sample home |
+| GET/POST | `/api/access-requests` | list, or (tradesperson) request edit access by homeowner email |
+| POST | `/api/access-requests/{id}/decision` | (homeowner) approve, decline, or revoke |
+| GET | `/api/homeowners/lookup?email=` | (tradesperson) whether an email can receive walls |
+| POST | `/api/invites` | (tradesperson) invite an email that has a wall waiting |
 
 Everything except `/api/health` and `/api/auth/*` returns 401 without a session.
 Passwords are hashed with scrypt; demo accounts are created on startup
@@ -50,8 +54,7 @@ Passwords are hashed with scrypt; demo accounts are created on startup
 
 `assets/sample/` holds the photos behind the six-wall sample home. The seed in
 `app/services/seed_service.py` maps each wall to an asset file (optionally a crop of
-it) and places markers and calibration corners on real features in that photo. To swap
-a photo, replace the file and reload the sample home; photos are rewritten on every load.
+it) and places markers and calibration corners on real features in that photo. The demo homeowner gets the sample home on first start, recorded by the demo tradesperson.
 Supported formats are anything Pillow can open, including JPEG, PNG, and AVIF.
 
 ## Test

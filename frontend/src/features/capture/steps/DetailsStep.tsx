@@ -1,36 +1,107 @@
 import { useState } from 'react'
 
 import { Button, TextField } from '@/components/ui'
-import type { Coverage, Region } from '@/domain/types'
+import type { AccountBrief, Coverage, Region } from '@/domain/types'
 import { CoverageSelector } from '@/features/capture/CoverageSelector'
 import { UncoveredRegionEditor } from '@/features/capture/UncoveredRegionEditor'
 import { validateDetails } from '@/features/capture/validation'
 import type { DetailsErrors } from '@/features/capture/validation'
 import type { DraftAction, WallDraft } from '@/features/capture/wallDraft'
+import { useHomeownerStatus } from '@/hooks/useHomeownerStatus'
+
+/**
+ * Where the wall goes: a homeowner named by email (new wall), or the homeowner it
+ * already belongs to, or is waiting for (editing).
+ */
+export type Destination =
+  | { mode: 'choose'; knownClientEmails: string[] }
+  | { mode: 'fixed'; owner: AccountBrief | null; pendingEmail: string | null }
 
 interface DetailsStepProps {
   draft: WallDraft
   dispatch: React.Dispatch<DraftAction>
   knownRooms: string[]
+  destination?: Destination
   onBack: () => void
   onNext: () => void
 }
 
-export function DetailsStep({ draft, dispatch, knownRooms, onBack, onNext }: DetailsStepProps) {
+export function DetailsStep({ draft, dispatch, knownRooms, destination, onBack, onNext }: DetailsStepProps) {
   const [errors, setErrors] = useState<DetailsErrors>({})
+  const choosing = destination?.mode === 'choose'
+  const homeowner = useHomeownerStatus(draft.homeownerEmail, choosing)
 
-  const setField = (field: 'room' | 'label' | 'author' | 'observedDate' | 'coverageNote') =>
-    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+  const setField = (field: 'room' | 'label' | 'author' | 'observedDate' | 'coverageNote' | 'homeownerEmail') =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       dispatch({ type: 'setField', field, value: event.target.value })
+      // Clear this field's message as soon as it is edited; Next re-checks everything.
+      setErrors((current) => (field in current ? { ...current, [field]: undefined } : current))
+    }
 
   const handleNext = () => {
-    const found = validateDetails(draft)
+    // A tradesperson's email must be checked before moving on; until then it is 'unchecked'.
+    const found = validateDetails(draft, choosing ? (homeowner.status ?? 'unchecked') : undefined)
     setErrors(found)
     if (Object.keys(found).length === 0) onNext()
   }
 
   return (
     <div className="flex flex-col gap-4">
+      {destination?.mode === 'choose' ? (
+        <>
+          <TextField
+            label="Homeowner's email"
+            type="email"
+            inputMode="email"
+            autoComplete="off"
+            list="known-clients"
+            placeholder="name@example.com"
+            hint="The wall is added to this homeowner's account, where they can view it as a PDF."
+            value={draft.homeownerEmail}
+            onChange={setField('homeownerEmail')}
+            error={errors.homeownerEmail}
+          />
+          <datalist id="known-clients">
+            {destination.knownClientEmails.map((email) => (
+              <option key={email} value={email} />
+            ))}
+          </datalist>
+          {homeowner.status === 'registered' ? (
+            <p className="-mt-2 text-sm text-green-700">This homeowner has an account. The wall goes straight to them.</p>
+          ) : null}
+          {homeowner.status === 'not_registered' ? (
+            <label className="-mt-1 flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              <input
+                type="checkbox"
+                className="mt-0.5 size-4 accent-[var(--color-accent)]"
+                checked={draft.inviteHomeowner}
+                onChange={(event) => {
+                  dispatch({ type: 'setInvite', invite: event.target.checked })
+                  setErrors((current) => ({ ...current, homeownerEmail: undefined }))
+                }}
+              />
+              <span>
+                <span className="font-semibold">No one has signed up with this email yet.</span> Invite this homeowner.
+                The wall will be saved and waiting in their account when they sign up with this email.
+              </span>
+            </label>
+          ) : null}
+        </>
+      ) : null}
+      {destination?.mode === 'fixed' && (destination.owner || destination.pendingEmail) ? (
+        <p className="rounded-md border border-line bg-surface-2 px-4 py-3 text-sm text-fg-muted">
+          {destination.owner ? (
+            <>
+              In <strong className="font-semibold text-fg">{destination.owner.name}</strong>’s account (
+              {destination.owner.email})
+            </>
+          ) : (
+            <>
+              Waiting for <strong className="font-semibold text-fg">{destination.pendingEmail}</strong> to sign up
+            </>
+          )}
+        </p>
+      ) : null}
       <TextField
         label="Room"
         list="known-rooms"

@@ -22,12 +22,12 @@ export function SegmentedControl<T extends string>({
 }: SegmentedControlProps<T>) {
   return (
     <div>
-      {label ? <span className="mb-1.5 block text-[13px] font-medium text-fg-muted">{label}</span> : null}
+      {label ? <span className="mb-1.5 block text-sm font-medium text-fg">{label}</span> : null}
       <div
         role="radiogroup"
         aria-label={label}
         className={cn(
-          'rounded-xl border border-line bg-surface-2 p-1',
+          'rounded-md border border-line bg-surface-2 p-0.5',
           options.length > 4 ? 'grid grid-cols-3 gap-1' : 'flex',
         )}
       >
@@ -41,8 +41,8 @@ export function SegmentedControl<T extends string>({
               aria-checked={selected}
               onClick={() => onChange(option.value)}
               className={cn(
-                'flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition-colors',
-                selected ? 'bg-surface-3 text-fg shadow-card' : 'text-fg-muted hover:text-fg',
+                'flex flex-1 items-center justify-center gap-1.5 rounded py-2 text-sm font-medium transition-colors',
+                selected ? 'bg-surface text-fg shadow-card ring-1 ring-line' : 'text-fg-muted hover:text-fg',
               )}
             >
               {option.swatch ? (

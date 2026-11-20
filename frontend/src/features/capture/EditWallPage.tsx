@@ -26,7 +26,7 @@ export function EditWallPage() {
   const size = photoQuery.data ? { width: photoQuery.data.width, height: photoQuery.data.height } : null
 
   return (
-    <>
+    <div className="mx-auto max-w-3xl">
       <PageHeader title="Edit wall" subtitle={`${wall.room} · ${wall.label}`} backTo={routes.wall(wall.id)} />
       <WallForm
         initialDraft={draftFromWall(wall, (id) => photosApi.url(id, wall.updated_at), size)}
@@ -34,10 +34,11 @@ export function EditWallPage() {
         submitLabel="Save changes"
         submitting={updateWall.isPending}
         submitError={updateWall.error}
+        destination={{ mode: 'fixed', owner: wall.owner, pendingEmail: wall.pending_owner_email }}
         onSubmit={(input) =>
           updateWall.mutate(input, { onSuccess: () => navigate(routes.wall(wall.id), { replace: true }) })
         }
       />
-    </>
+    </div>
   )
 }

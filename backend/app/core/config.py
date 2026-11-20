@@ -31,6 +31,20 @@ class Settings(BaseSettings):
     # Create the demo logins on startup (see app/services/demo_accounts.py).
     demo_accounts: bool = True
 
+    # Public address of the site, used in invitation links (e.g. https://example.com).
+    # When empty, links use the address the request came in on.
+    public_url: str = ""
+    # Outgoing mail for invitations. When smtp_host is empty, invitations are not emailed
+    # and the tradesperson sends the link from their own email app instead.
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    smtp_starttls: bool = True
+    # Minimum minutes between invitation emails to the same address from one sender.
+    invite_resend_minutes: int = 10
+
     @property
     def photos_dir(self) -> Path:
         return self.data_dir / "photos"

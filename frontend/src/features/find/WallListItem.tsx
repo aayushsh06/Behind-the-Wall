@@ -14,12 +14,12 @@ interface WallListItemProps {
 export function WallListItem({ wall }: WallListItemProps) {
   const coverage = COVERAGE_META[wall.coverage]
   return (
-    <li>
+    <li className="min-w-0">
       <Link
         to={routes.wall(wall.id)}
-        className="group flex items-center gap-3.5 rounded-2xl border border-line bg-surface p-3 shadow-card transition-colors hover:border-line-strong active:bg-surface-2"
+        className="group flex h-full items-center gap-3.5 rounded-lg border border-line bg-surface p-3 shadow-card transition-colors hover:border-line-strong hover:bg-surface-2/50"
       >
-        <div className="size-[68px] shrink-0 overflow-hidden rounded-xl bg-surface-3 ring-1 ring-line">
+        <div className="size-[68px] shrink-0 overflow-hidden rounded bg-surface-2 ring-1 ring-line">
           {wall.photo_id ? (
             <img
               src={photosApi.thumbnailUrl(wall.photo_id, wall.updated_at)}
@@ -32,7 +32,7 @@ export function WallListItem({ wall }: WallListItemProps) {
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] font-semibold tracking-[-0.01em]">{wall.label}</p>
+          <p className="truncate text-[15px] font-semibold">{wall.label}</p>
           <p className="truncate text-[13px] text-fg-muted">
             {wall.marker_count} {wall.marker_count === 1 ? 'item' : 'items'} · {wall.author}
           </p>

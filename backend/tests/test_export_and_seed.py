@@ -3,7 +3,7 @@ import base64
 import pytest
 from fastapi.testclient import TestClient
 
-from tests.conftest import wall_payload
+from tests.conftest import TEST_HOMEOWNER, TEST_USER, wall_payload
 
 
 @pytest.mark.parametrize(
@@ -37,7 +37,7 @@ def test_pipe_categories_survive_edit_and_export(
     html = client.get(f"/api/walls/{wall['id']}/export.html")
     assert html.status_code == 200, html.text
     assert f"<td>{label}" in html.text
-    assert f'.pin-{utility_type} {{ fill: {color}; }}' in html.text
+    assert f".pin-{utility_type} {{ fill: {color}; }}" in html.text
     assert f'class="pin-{utility_type}"' in html.text
     if kind == "line":
         assert f'class="seg" stroke="{color}"' in html.text
@@ -73,9 +73,27 @@ def test_json_export_round_trips_photo(client: TestClient, uploaded_photo: dict)
     assert base64.b64decode(payload["photo"]["data_base64"]) == original
 
 
+def _seed() -> list[str]:
+    """Load the sample home into TEST_HOMEOWNER's account, recorded by TEST_USER."""
+    from app.api.deps import get_photo_storage
+    from app.core.config import get_settings
+    from app.core.database import SessionLocal
+    from app.repositories import PhotoRepository, UserRepository, WallRepository
+    from app.services.seed_service import SeedService
+
+    with SessionLocal() as session:
+        users = UserRepository(session)
+        owner = users.get_by_email(TEST_HOMEOWNER["email"])
+        trade = users.get_by_email(TEST_USER["email"])
+        seed = SeedService(
+            WallRepository(session), PhotoRepository(session), get_photo_storage(get_settings())
+        )
+        return seed.seed_sample_home(owner.id, trade.id)
+
+
 def test_seed_is_idempotent(client: TestClient) -> None:
-    first = client.post("/api/seed/sample-home").json()["wall_ids"]
-    second = client.post("/api/seed/sample-home").json()["wall_ids"]
+    first = _seed()
+    second = _seed()
     assert first == second
     assert len(first) == 6
 
@@ -100,12 +118,12 @@ def test_seed_refreshes_replaced_photo(client: TestClient) -> None:
     from app.api.deps import get_photo_storage
     from app.core.config import get_settings
 
-    first = client.post("/api/seed/sample-home").json()["wall_ids"]
+    first = _seed()
     wall = client.get(f"/api/walls/{first[0]}").json()
     storage = get_photo_storage(get_settings())
     storage.path_for(wall["photo_id"]).write_bytes(b"corrupted")
 
-    client.post("/api/seed/sample-home")
+    _seed()
     photo = client.get(f"/api/photos/{wall['photo_id']}")
     assert photo.status_code == 200
     assert photo.content[:2] == b"\xff\xd8"  # JPEG magic bytes

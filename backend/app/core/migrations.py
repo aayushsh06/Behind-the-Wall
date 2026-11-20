@@ -7,7 +7,23 @@ data are appended here so existing records keep working without a migration tool
 from sqlalchemy import Engine, inspect, text
 
 # (table, column, DDL type) for every column added after the first release.
-ADDED_COLUMNS: tuple[tuple[str, str, str], ...] = (("walls", "calibration", "JSON"),)
+ADDED_COLUMNS: tuple[tuple[str, str, str], ...] = (
+    ("walls", "calibration", "JSON"),
+    ("walls", "owner_id", "VARCHAR(32)"),
+    ("walls", "created_by_id", "VARCHAR(32)"),
+    ("walls", "pending_owner_email", "VARCHAR(254)"),
+    ("walls", "last_edited_by_id", "VARCHAR(32)"),
+    ("walls", "revision", "INTEGER NOT NULL DEFAULT 1"),
+    ("photos", "owner_id", "VARCHAR(32)"),
+)
+
+# (index name, table, column) for indexes on columns listed above.
+ADDED_INDEXES: tuple[tuple[str, str, str], ...] = (
+    ("ix_walls_owner_id", "walls", "owner_id"),
+    ("ix_walls_created_by_id", "walls", "created_by_id"),
+    ("ix_walls_pending_owner_email", "walls", "pending_owner_email"),
+    ("ix_photos_owner_id", "photos", "owner_id"),
+)
 
 
 def ensure_columns(engine: Engine) -> list[str]:
@@ -23,4 +39,10 @@ def ensure_columns(engine: Engine) -> list[str]:
                 continue
             connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {ddl_type}"))
             added.append(f"{table}.{column}")
+        tables = set(inspector.get_table_names())
+        for index, table, column in ADDED_INDEXES:
+            if table in tables:
+                connection.execute(
+                    text(f"CREATE INDEX IF NOT EXISTS {index} ON {table} ({column})")
+                )
     return added

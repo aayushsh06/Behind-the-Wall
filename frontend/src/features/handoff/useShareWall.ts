@@ -24,7 +24,7 @@ export function useShareWall(wallId: string, title: string) {
     }
   }
 
-  const openPreview = () => window.open(exportsApi.url(wallId, 'html'), '_blank', 'noopener')
+  const openPreview = () => window.open(exportsApi.url(wallId, 'pdf'), '_blank', 'noopener')
 
   return { status, error, share, openPreview }
 }

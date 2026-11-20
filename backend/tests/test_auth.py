@@ -80,7 +80,12 @@ def test_login_failure_does_not_reveal_which_part_was_wrong(anon_client: TestCli
         ("get", "/api/photos/any/meta"),
         ("get", "/api/walls/any/export.html"),
         ("get", "/api/walls/any/export.json"),
-        ("post", "/api/seed/sample-home"),
+        ("get", "/api/walls/any/export.pdf"),
+        ("get", "/api/access-requests"),
+        ("post", "/api/access-requests"),
+        ("post", "/api/access-requests/any/decision"),
+        ("get", "/api/homeowners/lookup?email=a@b.co"),
+        ("post", "/api/invites"),
     ],
 )
 def test_record_endpoints_require_sign_in(anon_client: TestClient, method: str, path: str) -> None:
@@ -111,7 +116,7 @@ def test_demo_accounts_are_created_once_and_load_the_sample_home(tmp_path: Path)
     from app.core.config import Settings
     from app.core.database import Base
     from app.core.security import verify_password
-    from app.repositories import UserRepository, WallRepository
+    from app.repositories import UserRepository, Viewer, WallRepository
     from app.services.demo_accounts import DEMO_ACCOUNTS, ensure_demo_accounts
 
     settings = Settings(data_dir=tmp_path)
@@ -122,12 +127,15 @@ def test_demo_accounts_are_created_once_and_load_the_sample_home(tmp_path: Path)
     with Session() as session:
         created = ensure_demo_accounts(session, settings)
         assert created == [a.email for a in DEMO_ACCOUNTS]
-        assert len(WallRepository(session).list()) == 6
+        visible: dict[str, int] = {}
         for account in DEMO_ACCOUNTS:
             user = UserRepository(session).get_by_email(account.email)
+            visible[account.role] = len(WallRepository(session).list(Viewer(user.id)))
             assert user.role == account.role
             assert verify_password(account.password, user.password_hash)
 
+        # The homeowner reads the whole sample home; the tradesperson recorded all of it.
+        assert visible == {"homeowner": 6, "tradesperson": 6}
         assert ensure_demo_accounts(session, settings) == []
 
         # A renamed demo account is put back the next time the app starts.

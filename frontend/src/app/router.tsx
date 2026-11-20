@@ -5,7 +5,7 @@ import { routePatterns } from '@/app/routes'
 import { AuthLayout } from '@/features/auth/AuthLayout'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RegisterPage } from '@/features/auth/RegisterPage'
-import { RequireAuth } from '@/features/auth/RequireAuth'
+import { RequireAuth, TradespersonOnly } from '@/features/auth/RequireAuth'
 import { WelcomePage } from '@/features/auth/WelcomePage'
 import { EditWallPage } from '@/features/capture/EditWallPage'
 import { NewWallPage } from '@/features/capture/NewWallPage'
@@ -30,9 +30,23 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: routePatterns.home, element: <WallListPage /> },
-      { path: routePatterns.newWall, element: <NewWallPage /> },
+      {
+        path: routePatterns.newWall,
+        element: (
+          <TradespersonOnly>
+            <NewWallPage />
+          </TradespersonOnly>
+        ),
+      },
       { path: routePatterns.wall, element: <WallDetailPage /> },
-      { path: routePatterns.editWall, element: <EditWallPage /> },
+      {
+        path: routePatterns.editWall,
+        element: (
+          <TradespersonOnly>
+            <EditWallPage />
+          </TradespersonOnly>
+        ),
+      },
       { path: routePatterns.settings, element: <SettingsPage /> },
       { path: '*', element: <Navigate to={routePatterns.home} replace /> },
     ],

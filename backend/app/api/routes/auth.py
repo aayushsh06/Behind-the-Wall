@@ -4,11 +4,11 @@ from datetime import timedelta
 
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
-from app.api.deps import CurrentUserDep, SettingsDep, UserRepoDep
+from app.api.deps import CurrentUserDep, SettingsDep, UserRepoDep, WallRepoDep
 from app.core.config import Settings
 from app.core.security import DUMMY_PASSWORD_HASH, verify_password
 from app.models import User
-from app.schemas import LoginRequest, RegisterRequest, UserRead
+from app.schemas import LoginRequest, RegisterRequest, Role, UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -29,13 +29,20 @@ def _sign_in(response: Response, users: UserRepoDep, settings: Settings, user: U
 
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def register(
-    payload: RegisterRequest, response: Response, users: UserRepoDep, settings: SettingsDep
+    payload: RegisterRequest,
+    response: Response,
+    users: UserRepoDep,
+    walls: WallRepoDep,
+    settings: SettingsDep,
 ) -> User:
     if users.get_by_email(payload.email) is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists")
     user = users.create(
         email=payload.email, name=payload.name, role=payload.role, password=payload.password
     )
+    if user.role == Role.HOMEOWNER:
+        # Walls tradespeople sent to this email before the account existed move in now.
+        walls.claim_pending(user.email, user.id)
     _sign_in(response, users, settings, user)
     return user
 

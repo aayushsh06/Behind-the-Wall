@@ -29,8 +29,8 @@ export function MarkerForm({ marker, position, onChange, onDelete, onDone }: Mar
       <SegmentedControl label="What is it?" options={TYPE_OPTIONS} value={marker.type} onChange={(type) => onChange({ type })} />
 
       {position ? (
-        <div className="rounded-xl border border-line bg-surface-2 px-3.5 py-2.5 text-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-fg-faint">
+        <div className="rounded-md border border-line bg-surface-2 px-3.5 py-2.5 text-sm">
+          <p className="text-xs font-medium text-fg-faint">
             {marker.kind === 'line' ? 'Computed run' : 'Computed position'}
           </p>
           {position.length ? <p className="mt-1 font-semibold">{position.length} long</p> : null}

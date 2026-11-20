@@ -32,7 +32,7 @@ Both are created on startup; on an empty database the six-wall sample home is lo
 them. Set `BTW_DEMO_ACCOUNTS=false` to skip this. If ports are taken, run
 `API_PORT=8010 WEB_PORT=5180 ./scripts/dev.sh`.
 
-## Deploy shape
+## Deploy
 
 ```
 ./scripts/serve.sh        # builds the frontend, serves app + API from one uvicorn on :8000
@@ -40,6 +40,28 @@ them. Set `BTW_DEMO_ACCOUNTS=false` to skip this. If ports are taken, run
 
 FastAPI serves the built frontend when `frontend/dist` exists. Data lives in
 `backend/data/` (SQLite file plus JPEG photos); back that directory up to keep records.
+
+For hosting, the `Dockerfile` builds the same single-process image. Run it with a
+persistent volume mounted at `/data` (SQLite and photos), served over HTTPS:
+
+```
+docker build -t behind-the-wall .
+docker run -p 8000:8000 -v btw-data:/data behind-the-wall
+```
+
+`render.yaml` deploys that image to Render with a 1 GB persistent disk
+(Dashboard → New → Blueprint → this repository). Any host that runs a container with a
+persistent volume works (Fly.io, Railway, a VPS); serverless hosts such as Vercel do not,
+because SQLite and photos need a disk that survives restarts.
+
+| Variable | Production value | Purpose |
+|---|---|---|
+| `BTW_DATA_DIR` | `/data` | where the database and photos are stored |
+| `BTW_SESSION_COOKIE_SECURE` | `true` | send the sign-in cookie only over HTTPS |
+| `BTW_DEMO_ACCOUNTS` | `false` for real use | create the two public demo logins on startup |
+| `PORT` | set by the host | port uvicorn listens on |
+| `BTW_PUBLIC_URL` | your site's address | base of invitation links |
+| `BTW_SMTP_HOST`, `BTW_SMTP_PORT`, `BTW_SMTP_USERNAME`, `BTW_SMTP_PASSWORD`, `BTW_SMTP_FROM` | optional | email invitations; without them the tradesperson sends the link |
 
 ## Checks
 
@@ -54,18 +76,37 @@ make build   # production frontend build
 | Flow | Screen | Requirement |
 |---|---|---|
 | Sign in | Welcome page, create account (homeowner or tradesperson), sign in | |
-| Find a wall | Wall list grouped by room with search | R1 |
+| Find a wall | Homeowner: walls grouped by room. Tradesperson: clients, then rooms. Search | R1 |
 | See what is unknown | Coverage banner + hatched "not inspected" region | R2 |
 | Read a record | Wall detail: numbered pins, items table, author, date | R3 |
-| Record a wall | Photo → wall size → details → tap-to-place items (points or line runs) | R4 |
+| Record a wall | Tradesperson: photo → wall size → details (homeowner email, invite if new) → tap-to-place items | R4 |
 | Compute positions | Drag two corner handles onto the wall and enter its size; every item's position is computed from the photo | R3, R4 |
-| Hand off | Share sheet exports one wall as self-contained HTML or JSON | R5 |
+| Hand off | Wall goes to the homeowner's account; homeowner opens it as a PDF; share sheet sends the PDF or JSON | R5 |
 | Keep records | Stored server-side in SQLite + disk | R6 |
 
 See `backend/README.md` and `frontend/README.md` for per-service details.
 
-Every record endpoint requires a signed-in user (session cookie). The role labels the
-account only; every signed-in user sees and can edit the same walls.
+Every record endpoint requires a signed-in user (session cookie). Rules live in
+`backend/app/api/access.py`:
+
+| | Homeowner | Tradesperson |
+|---|---|---|
+| Records walls | no (read-only account) | yes, into a homeowner's account chosen by email |
+| Sees | every wall in their account, by room, as the app view and as a PDF | walls they recorded, plus every wall in homes whose owner approved their access request, grouped by client |
+| Edits | no | walls they recorded, and walls in homes that approved them |
+| Deletes | no | only walls they recorded |
+| Edit access | approves, declines, or removes requests on the Account page | requests access by the homeowner's email |
+
+**PDFs.** `GET /api/walls/{id}/export.pdf` renders the annotated photo, items, and record
+details. It is rebuilt from the latest save on every request, and each save increments the
+wall's revision, so the homeowner's PDF updates as soon as a tradesperson saves an edit.
+
+**Invitations.** If a tradesperson sends a wall to an email with no account, they confirm an
+invite; the wall waits for that email and moves into the homeowner's account when they sign
+up with it. The tradesperson then sends an invitation: emailed by the server when SMTP is
+configured, otherwise from their own email app or by copying the link.
+
+Records saved before accounts owned walls have no owner and are visible to no one.
 
 Markers distinguish Water, Gas, Pipe, Wire, Framing, and Other in capture, viewing,
 and exports. Pipe remains available for unspecified pipes and existing records;

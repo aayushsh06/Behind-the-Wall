@@ -24,6 +24,10 @@ export interface WallDraft {
   calibration: WallCalibration | null
   markers: Marker[]
   notes: string
+  /** Tradesperson creating a wall: which homeowner's account it goes into. */
+  homeownerEmail: string
+  /** The email has no account yet: hold the wall for them and invite them. */
+  inviteHomeowner: boolean
   selectedMarkerId: string | null
 }
 
@@ -38,7 +42,7 @@ export const DEFAULT_CALIBRATION: WallCalibration = {
   unit: 'in',
 }
 
-export function emptyDraft(author = ''): WallDraft {
+export function emptyDraft(author = '', homeownerEmail = ''): WallDraft {
   return {
     photo: null,
     room: '',
@@ -51,6 +55,8 @@ export function emptyDraft(author = ''): WallDraft {
     calibration: null,
     markers: [],
     notes: '',
+    homeownerEmail,
+    inviteHomeowner: false,
     selectedMarkerId: null,
   }
 }
@@ -71,6 +77,8 @@ export function draftFromWall(wall: Wall, photoUrl: (id: string) => string, size
     calibration: wall.calibration,
     markers: wall.markers,
     notes: wall.notes,
+    homeownerEmail: wall.owner?.email ?? wall.pending_owner_email ?? '',
+    inviteHomeowner: false,
     selectedMarkerId: null,
   }
 }
@@ -88,15 +96,18 @@ export function draftToInput(draft: WallDraft): WallInput {
     calibration: draft.photo ? draft.calibration : null,
     markers: draft.markers.map(({ id: _id, ...rest }) => rest),
     notes: draft.notes.trim(),
+    ...(draft.homeownerEmail.trim() ? { homeowner_email: draft.homeownerEmail.trim() } : {}),
+    ...(draft.inviteHomeowner ? { invite: true } : {}),
   }
 }
 
-type TextField = 'room' | 'label' | 'author' | 'observedDate' | 'coverageNote' | 'notes'
+type TextField = 'room' | 'label' | 'author' | 'observedDate' | 'coverageNote' | 'notes' | 'homeownerEmail'
 
 export type DraftAction =
   | { type: 'setPhoto'; photo: DraftPhoto }
   | { type: 'clearPhoto' }
   | { type: 'setField'; field: TextField; value: string }
+  | { type: 'setInvite'; invite: boolean }
   | { type: 'setCoverage'; coverage: Coverage }
   | { type: 'setRegion'; region: Region }
   | { type: 'setCalibration'; calibration: WallCalibration | null }
@@ -153,7 +164,14 @@ export function draftReducer(draft: WallDraft, action: DraftAction): WallDraft {
         selectedMarkerId: null,
       }
     case 'setField':
-      return { ...draft, [action.field]: action.value }
+      return {
+        ...draft,
+        [action.field]: action.value,
+        // A different email needs its own decision about inviting.
+        ...(action.field === 'homeownerEmail' ? { inviteHomeowner: false } : {}),
+      }
+    case 'setInvite':
+      return { ...draft, inviteHomeowner: action.invite }
     case 'setCoverage':
       return {
         ...draft,

@@ -1,12 +1,13 @@
 interface WallSearchProps {
   value: string
   onChange: (value: string) => void
+  placeholder?: string
 }
 
-export function WallSearch({ value, onChange }: WallSearchProps) {
+export function WallSearch({ value, onChange, placeholder = 'Search by room or wall' }: WallSearchProps) {
   return (
     <label className="relative block">
-      <span className="sr-only">Search walls</span>
+      <span className="sr-only">{placeholder}</span>
       <svg
         aria-hidden="true"
         className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-faint"
@@ -23,10 +24,10 @@ export function WallSearch({ value, onChange }: WallSearchProps) {
       <input
         type="search"
         inputMode="search"
-        placeholder="Search by room or wall"
+        placeholder={placeholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-12 w-full rounded-xl border border-line bg-surface-2 pl-10 pr-3.5 text-base text-fg placeholder:text-fg-faint transition-colors focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/20"
+        className="h-11 w-full rounded-md border border-line-strong bg-surface pl-10 pr-3.5 text-base text-fg placeholder:text-fg-faint transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
       />
     </label>
   )
