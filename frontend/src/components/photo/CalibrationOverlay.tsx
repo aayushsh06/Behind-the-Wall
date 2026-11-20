@@ -31,11 +31,11 @@ export function CalibrationOverlay({ calibration, editable, surfaceRef, onMoveCo
             height: `${(br.y - tl.y) * 100}%`,
           }}
         >
-          <span className="absolute left-1/2 top-1 -translate-x-1/2 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-semibold text-white">
-            ↔ {formatLength(calibration.width, calibration.unit)}
+          <span className="absolute left-1/2 top-1 -translate-x-1/2 rounded-full bg-ink/80 px-2 py-0.5 text-[11px] font-semibold text-white">
+            {formatLength(calibration.width, calibration.unit)} wide
           </span>
-          <span className="absolute right-1 top-1/2 -translate-y-1/2 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-semibold text-white">
-            ↕ {formatLength(calibration.height, calibration.unit)}
+          <span className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-ink/80 px-2 py-0.5 text-[11px] font-semibold text-white">
+            {formatLength(calibration.height, calibration.unit)} high
           </span>
         </div>
       ) : null}

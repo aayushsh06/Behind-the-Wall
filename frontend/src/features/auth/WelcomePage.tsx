@@ -5,21 +5,22 @@ import { useCurrentUser } from '@/hooks/useAuth'
 import { routes } from '@/app/routes'
 import { Button, Dimension } from '@/components/ui'
 import { HeroWallShot } from '@/features/marketing/HeroWallShot'
+import { TraceDemo } from '@/features/marketing/TraceDemo'
 import { UTILITY_META } from '@/domain/utility'
 import { LEGEND } from '@/features/marketing/legend'
 
 const STEPS = [
   {
     title: 'Photograph the open wall',
-    body: 'While the drywall is off, the tradesperson takes a photo on their phone and marks the wall’s corners and size.',
+    body: 'On site, on your phone. Drag two corners onto the wall and enter its size, and every position is measured for you.',
   },
   {
-    title: 'Mark what’s inside',
-    body: 'Tap to place pipes, wiring, and framing. Positions are measured from the floor and the wall’s edge automatically.',
+    title: 'Trace what’s inside',
+    body: 'Pick water, gas, pipe, wire, or framing, then trace it with your finger. The line snaps onto it in the photo. Pinch to zoom where cables are close.',
   },
   {
     title: 'Send it to the homeowner',
-    body: 'The record goes to the homeowner’s account by email and is filed under the room. They open it as a PDF any time.',
+    body: 'Type their email and it lands in their account under the room. Not on Behind the Wall yet? Invite them, and it waits for them.',
   },
 ] as const
 
@@ -29,10 +30,10 @@ const AUDIENCES = [
     eyebrow: 'For homeowners',
     title: 'Every wall in your home, on file.',
     points: [
-      'Records from every tradesperson, sorted by room',
-      'Each wall as a PDF you can open, download, or forward',
-      'You decide who can correct a record',
-      'Free to join; nothing to install',
+      'Walls from every tradesperson, filed by room',
+      'Each wall as a PDF that updates when it’s corrected',
+      'Approve which tradespeople can correct your records',
+      'Free, and it works in any browser',
     ],
     cta: 'Create a homeowner account',
   },
@@ -41,10 +42,10 @@ const AUDIENCES = [
     eyebrow: 'For tradespeople',
     title: 'Leave a record, not a mystery.',
     points: [
-      'Record on your phone in a couple of minutes',
-      'Send to the homeowner by email, or invite them to join',
-      'All your clients and their walls in one list',
-      'Fix a record later and their PDF updates',
+      'Trace cables and pipes freehand; they snap to the photo',
+      'Your clients in one list, each with their own walls',
+      'Send by email, or invite homeowners who haven’t joined',
+      'Ask for access to correct walls someone else recorded',
     ],
     cta: 'Create a tradesperson account',
   },
@@ -78,11 +79,7 @@ export function WelcomePage() {
 
           <div className="relative flex min-h-[600px] flex-col justify-end p-7 sm:p-12 md:min-h-[660px] md:justify-center md:p-16">
             <div className="max-w-xl">
-              <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-[13px] font-semibold text-white ring-1 ring-inset ring-white/20 backdrop-blur">
-                <span className="size-1.5 rounded-full bg-brand" />
-                Wall records for homes
-              </p>
-              <h1 className="mt-6 text-[42px] font-semibold leading-[1.02] tracking-[-0.035em] text-white sm:text-6xl lg:text-[76px]">
+              <h1 className="text-[42px] font-semibold leading-[1.02] tracking-[-0.035em] text-white sm:text-6xl lg:text-[76px]">
                 Know what’s behind the wall <span className="text-brand">before you cut.</span>
               </h1>
               <p className="mt-6 max-w-lg text-base leading-relaxed text-white/75 sm:text-lg">
@@ -110,7 +107,7 @@ export function WelcomePage() {
             <img src="/images/wall-kitchen.jpg" alt="" className="aspect-[16/9] w-full object-cover" />
             <div className="p-4">
               <p className="text-[13px] font-semibold text-fg-faint">Kitchen · Wall behind sink</p>
-              <p className="mt-1 text-[15px] font-semibold tracking-tight">5 items recorded</p>
+              <p className="mt-1 text-[15px] font-semibold tracking-tight">3 runs traced, 2 boxes</p>
               <div className="mt-3 flex items-center justify-between">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-xs font-semibold">
                   <span className="size-1.5 rounded-full bg-brand" />
@@ -129,12 +126,12 @@ export function WelcomePage() {
           <div>
             <p className="eyebrow text-brand-ink">See a record</p>
             <h2 className="mt-3 text-3xl font-semibold leading-tight tracking-[-0.025em] sm:text-[44px]">
-              One photo. Everything inside, marked.
+              One photo. Everything inside, traced.
             </h2>
           </div>
           <p className="text-base leading-relaxed text-fg-muted md:pb-2">
-            Each item gets a number, a colour, and a position measured from the floor and the wall’s edge. Anything that
-            wasn’t opened is hatched, so it’s never mistaken for clear.
+            Every run is traced freehand and snapped to the cable or pipe, with its length and position measured from the
+            floor and the wall’s edge. Anything that wasn’t opened is hatched, so it’s never mistaken for clear.
           </p>
         </div>
         <HeroWallShot className="mt-12" />
@@ -166,6 +163,35 @@ export function WelcomePage() {
               </li>
             ))}
           </ol>
+        </div>
+      </section>
+
+      {/* Trace it. It snaps. */}
+      <section className="mx-auto max-w-6xl px-4 pt-20 sm:px-6 md:pt-28">
+        <div className="grid items-center gap-10 md:grid-cols-[1.25fr_1fr] md:gap-16">
+          <TraceDemo />
+          <div>
+            <p className="eyebrow text-brand-ink">Made for the phone in your pocket</p>
+            <h2 className="mt-3 text-3xl font-semibold leading-tight tracking-[-0.025em] sm:text-[44px]">
+              Trace it roughly. It snaps.
+            </h2>
+            <p className="mt-5 text-base leading-relaxed text-fg-muted">
+              Nobody draws a straight line on a phone in a crawl space. Trace near the cable or pipe and the line moves
+              onto it, following its curves. The dashed line here is a real trace; the solid one is where it snapped.
+            </p>
+            <ul className="mt-8 flex flex-col divide-y divide-line border-y border-line">
+              {[
+                'Choose what you’re marking first, so every run has the right colour',
+                'Pinch to zoom where cables run close together',
+                'Undo a run in one tap if it landed on the wrong one',
+              ].map((point) => (
+                <li key={point} className="flex items-center gap-3 py-3.5 text-[15px]">
+                  <span aria-hidden="true" className="h-px w-4 bg-brand" />
+                  {point}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </section>
 

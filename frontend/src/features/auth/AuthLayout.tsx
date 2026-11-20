@@ -7,8 +7,6 @@ import { PublicOnly } from '@/features/auth/PublicOnly'
 import { useCurrentUser } from '@/hooks/useAuth'
 import { HeroWallShot } from '@/features/marketing/HeroWallShot'
 
-const YEAR = new Date().getFullYear()
-
 const SECTIONS = [
   { href: '#how-it-works', label: 'How it works' },
   { href: '#homeowners', label: 'Homeowners' },
@@ -92,7 +90,7 @@ export function AuthChrome({ children }: { children: ReactNode }) {
                 <Link to={routes.register()} className="hover:text-brand">Create account</Link>
               </li>
             </ul>
-            <p className="eyebrow text-white/50">© {YEAR} Behind the Wall</p>
+            <p className="eyebrow text-white/50">Human-Centered Software Design &amp; Development Project | Fall 2026</p>
           </div>
         </div>
       </footer>

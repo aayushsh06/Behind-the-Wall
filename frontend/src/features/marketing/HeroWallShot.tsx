@@ -1,4 +1,6 @@
 import { UTILITY_META } from '@/domain/utility'
+import type { XY } from '@/features/marketing/sampleRuns'
+import { SAMPLE_RUNS } from '@/features/marketing/sampleRuns'
 import { LEGEND } from '@/features/marketing/legend'
 import { cn } from '@/lib/cn'
 
@@ -6,24 +8,30 @@ import { cn } from '@/lib/cn'
  * The product, shown on a real wall photo: numbered pins and runs for what is inside,
  * and the hatched area nobody inspected. Coordinates are fractions of the photo.
  */
-const WATER = UTILITY_META.water.hex
-const PIPE = UTILITY_META.pipe.hex
-const WIRE = UTILITY_META.wire.hex
-const FRAMING = UTILITY_META.framing.hex
+const midpoint = (points: readonly XY[]): XY => {
+  const lengths = points.slice(1).map((p, i) => Math.hypot(p[0] - points[i]![0], p[1] - points[i]![1]))
+  let half = lengths.reduce((sum, l) => sum + l, 0) / 2
+  for (let i = 0; i < lengths.length; i++) {
+    if (half <= lengths[i]!) {
+      const t = half / lengths[i]!
+      const [a, b] = [points[i]!, points[i + 1]!]
+      return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]
+    }
+    half -= lengths[i]!
+  }
+  return points[points.length - 1]!
+}
 
-const RUNS = [
-  { color: PIPE, from: [0.305, 0.06], to: [0.305, 0.82] },
-  { color: WIRE, from: [0.435, 0.42], to: [0.72, 0.42] },
-  { color: FRAMING, from: [0.425, 0.21], to: [0.425, 0.84] },
-] as const
-
+// Freehand runs, snapped by the app's own code (see sampleRuns.ts), plus two points.
+const RUNS = SAMPLE_RUNS.map((run) => ({ color: UTILITY_META[run.type].hex, points: run.snapped }))
 const PINS = [
-  { n: 1, color: PIPE, x: 0.305, y: 0.3, label: 'Drain' },
-  { n: 2, color: WATER, x: 0.372, y: 0.44, label: 'Supply' },
-  { n: 3, color: WIRE, x: 0.55, y: 0.42, label: '12/2 NM' },
-  { n: 4, color: WIRE, x: 0.622, y: 0.3, label: 'Box' },
-  { n: 5, color: FRAMING, x: 0.425, y: 0.7, label: 'Stud' },
-] as const
+  ...SAMPLE_RUNS.map((run, i) => {
+    const [x, y] = midpoint(run.snapped)
+    return { n: i + 1, color: UTILITY_META[run.type].hex, x, y, label: run.label }
+  }),
+  { n: 4, color: UTILITY_META.wire.hex, x: 0.622, y: 0.3, label: 'Junction box' },
+  { n: 5, color: UTILITY_META.wire.hex, x: 0.617, y: 0.645, label: 'Dishwasher box' },
+]
 
 const UNINSPECTED = { x: 0.745, y: 0.22, w: 0.255, h: 0.46 }
 
@@ -57,14 +65,14 @@ export function HeroWallShot({ compact = false, className }: HeroWallShotProps) 
         </div>
         <svg aria-hidden="true" className="absolute inset-0 size-full" viewBox="0 0 100 100" preserveAspectRatio="none">
           {RUNS.map((run) => (
-            <g key={`${run.from}-${run.to}`}>
-              <line
-                x1={run.from[0] * 100} y1={run.from[1] * 100} x2={run.to[0] * 100} y2={run.to[1] * 100}
-                stroke="#fff" strokeWidth={7} strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.9}
+            <g key={run.points.join()} fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <polyline
+                points={run.points.map(([x, y]) => `${x * 100},${y * 100}`).join(' ')}
+                stroke="#fff" strokeWidth={7} vectorEffect="non-scaling-stroke" opacity={0.9}
               />
-              <line
-                x1={run.from[0] * 100} y1={run.from[1] * 100} x2={run.to[0] * 100} y2={run.to[1] * 100}
-                stroke={run.color} strokeWidth={4} strokeLinecap="round" vectorEffect="non-scaling-stroke"
+              <polyline
+                points={run.points.map(([x, y]) => `${x * 100},${y * 100}`).join(' ')}
+                stroke={run.color} strokeWidth={4} vectorEffect="non-scaling-stroke"
               />
             </g>
           ))}
@@ -91,9 +99,9 @@ export function HeroWallShot({ compact = false, className }: HeroWallShotProps) 
 
       {compact ? null : (
         <>
-          <div className="absolute -bottom-8 left-4 w-[min(300px,70%)] rounded-2xl bg-surface p-4 shadow-lift ring-1 ring-inset ring-line sm:-bottom-10 sm:left-8 sm:p-5">
-            <p className="eyebrow text-fg-faint">Kitchen — Wall behind sink</p>
-            <p className="mt-1.5 text-base font-semibold tracking-tight sm:text-lg">5 items recorded</p>
+          <div className="relative mt-4 w-full rounded-2xl bg-surface p-4 shadow-card ring-1 ring-inset ring-line sm:absolute sm:-bottom-10 sm:left-8 sm:mt-0 sm:w-[300px] sm:p-5 sm:shadow-lift">
+            <p className="eyebrow text-fg-faint">Kitchen · Wall behind sink</p>
+            <p className="mt-1.5 text-base font-semibold tracking-tight sm:text-lg">3 runs traced, 2 boxes</p>
             <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5">
               {LEGEND.map((item) => (
                 <li key={item.label} className="flex items-center gap-1.5 text-xs font-medium text-fg-muted">
