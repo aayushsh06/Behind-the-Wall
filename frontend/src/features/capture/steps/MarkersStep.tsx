@@ -92,7 +92,7 @@ export function MarkersStep({ draft, dispatch, submitting, submitError, submitLa
     tool === 'scroll'
       ? 'Scroll the page and pinch to zoom without marking anything. Choose Draw run to trace a run, or Add point to mark a single spot. Marks stay inside the wall frame.'
       : tool === 'draw'
-      ? `Trace the ${label} with your finger.${snap ? ` When you lift, it snaps to the ${label} in the photo.` : ''} Pinch with two fingers to zoom in where cables run close together.`
+      ? `Trace the ${label} with your finger inside the wall frame; swipe outside it to scroll.${snap ? ` When you lift, it snaps to the ${label} in the photo.` : ''} Pinch with two fingers to zoom in where cables run close together.`
       : `Tap the photo where each ${label} item is, like a box or valve. Drag a pin to adjust; pinch to zoom.`
 
   return (

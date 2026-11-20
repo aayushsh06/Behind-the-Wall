@@ -23,7 +23,7 @@ const STEP = 1.6
 /**
  * Lets the tradesperson zoom into the photo to trace cables that run close together.
  * Two fingers pinch to zoom and drag to pan; one finger is left to the photo for drawing
- * and tapping. Buttons offer the same without a gesture. Children lay out at full size
+ * (inside the wall frame only; elsewhere it scrolls the page) and tapping. Buttons offer the same without a gesture. Children lay out at full size
  * and are scaled with a CSS transform, so positions measured on the photo (via its
  * bounding box) stay correct at any zoom. `--photo-unzoom` lets pins counter-scale.
  */
@@ -36,14 +36,16 @@ export function ZoomViewport({ drawing = false, children }: ZoomViewportProps) {
   const zoomed = view.scale > 1
 
   // iOS Safari doesn't always honour touch-action, so also stop the browser's own touch
-  // handling here: two fingers on the photo never zoom or scroll the page, and while
-  // drawing or zoomed in, one finger belongs to the photo too (no page scroll, no
-  // rubber-band bounce or edge swipe).
+  // handling here: two fingers on the photo never zoom or scroll the page; zoomed in, one
+  // finger belongs to the photo; while drawing, only a finger that starts inside the wall
+  // frame (the element marked data-draw-zone) draws. Anywhere else the page scrolls.
   useEffect(() => {
     const element = ref.current
     if (!element) return
+    const inDrawZone = (event: TouchEvent) =>
+      event.target instanceof Element && event.target.closest('[data-draw-zone]') !== null
     const block = (event: TouchEvent) => {
-      if (event.touches.length > 1 || drawing || zoomed) event.preventDefault()
+      if (event.touches.length > 1 || zoomed || (drawing && inDrawZone(event))) event.preventDefault()
     }
     element.addEventListener('touchstart', block, { passive: false })
     element.addEventListener('touchmove', block, { passive: false })
@@ -125,7 +127,7 @@ export function ZoomViewport({ drawing = false, children }: ZoomViewportProps) {
         onPointerMoveCapture={onPointerMoveCapture}
         onPointerUpCapture={onPointerEndCapture}
         onPointerCancelCapture={onPointerEndCapture}
-        className={cn('overflow-hidden overscroll-contain rounded-2xl', drawing || zoomed ? 'touch-none' : 'touch-pan-y')}
+        className={cn('overflow-hidden overscroll-contain rounded-2xl', zoomed ? 'touch-none' : 'touch-pan-y')}
       >
         <div style={contentStyle}>{children({ zoom: view.scale, pinching })}</div>
       </div>

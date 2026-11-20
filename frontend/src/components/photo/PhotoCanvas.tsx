@@ -168,8 +168,7 @@ export function PhotoCanvas({
       onPointerCancel={() => setStroke(null)}
       className={cn(
         'relative w-full overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-line select-none',
-        editable && 'cursor-crosshair',
-        drawing && 'touch-none',
+        editable && !drawing && 'cursor-crosshair',
       )}
       style={{ aspectRatio }}
     >
@@ -182,6 +181,24 @@ export function PhotoCanvas({
           dimOutside={dimOutsideFrame}
           surfaceRef={surfaceRef}
           onMoveCorner={onMoveCalibrationCorner}
+        />
+      ) : null}
+      {drawing ? (
+        // Only a finger that lands inside the wall frame draws; anywhere else on the photo
+        // it scrolls the page as usual (see ZoomViewport).
+        <div
+          data-draw-zone=""
+          className="absolute cursor-crosshair touch-none"
+          style={
+            drawBounds
+              ? {
+                  left: `${drawBounds.x0 * 100}%`,
+                  top: `${drawBounds.y0 * 100}%`,
+                  width: `${(drawBounds.x1 - drawBounds.x0) * 100}%`,
+                  height: `${(drawBounds.y1 - drawBounds.y0) * 100}%`,
+                }
+              : { inset: 0 }
+          }
         />
       ) : null}
       <LineLayer lines={lines} liveStroke={stroke && drawColor ? { points: stroke, color: drawColor } : null} />
