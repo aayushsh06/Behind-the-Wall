@@ -21,8 +21,8 @@ export function UncoveredRegionOverlay({ region }: UncoveredRegionOverlayProps) 
         backgroundImage: HATCH,
       }}
     >
-      <span className="rounded bg-amber-700 px-2 py-0.5 text-[11px] font-bold tracking-wide text-white">
-        NOT INSPECTED
+      <span className="rounded bg-amber-700 px-2 py-0.5 text-[11px] font-semibold text-white">
+        Not inspected
       </span>
     </div>
   )

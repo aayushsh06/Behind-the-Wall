@@ -1,7 +1,10 @@
-"""Normalise uploaded images and store them on disk.
+"""Normalise uploaded images and store them in the database.
 
 Every photo is re-encoded as JPEG, orientation-corrected from EXIF, and resized so
-the longest edge is bounded. A small thumbnail is written alongside for list views.
+the longest edge is bounded. A small thumbnail is stored alongside for list views.
+
+Photos saved by earlier versions as files under ``data/photos`` are still read from
+there, so existing local records keep their pictures.
 """
 
 from dataclasses import dataclass
@@ -9,8 +12,10 @@ from io import BytesIO
 from pathlib import Path
 
 from PIL import Image, ImageOps, UnidentifiedImageError
+from sqlalchemy.orm import Session
 
 from app.core.config import Settings
+from app.models import PhotoFile
 
 JPEG_CONTENT_TYPE = "image/jpeg"
 
@@ -27,18 +32,13 @@ class ProcessedImage:
 
 
 class PhotoStorage:
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, session: Session) -> None:
         self._settings = settings
-        self._root = settings.photos_dir
-        self._root.mkdir(parents=True, exist_ok=True)
+        self._session = session
+        self._legacy_root = settings.photos_dir
 
-    # ---- paths -------------------------------------------------------------------
-
-    def path_for(self, photo_id: str) -> Path:
-        return self._root / f"{photo_id}.jpg"
-
-    def thumbnail_path_for(self, photo_id: str) -> Path:
-        return self._root / f"{photo_id}_thumb.jpg"
+    def _legacy_path(self, photo_id: str, thumbnail: bool = False) -> Path:
+        return self._legacy_root / f"{photo_id}{'_thumb' if thumbnail else ''}.jpg"
 
     # ---- processing --------------------------------------------------------------
 
@@ -63,25 +63,36 @@ class PhotoStorage:
         image.save(buffer, format="JPEG", quality=self._settings.photo_jpeg_quality, optimize=True)
         return ProcessedImage(data=buffer.getvalue(), width=image.width, height=image.height)
 
-    # ---- disk --------------------------------------------------------------------
+    # ---- storage -----------------------------------------------------------------
 
     def save(self, photo_id: str, raw: bytes) -> ProcessedImage:
+        """Process and store (or replace) a photo and its thumbnail."""
         full = self.process(raw)
         thumb = self.process_thumbnail(raw)
-        self.path_for(photo_id).write_bytes(full.data)
-        self.thumbnail_path_for(photo_id).write_bytes(thumb.data)
+        row = self._session.get(PhotoFile, photo_id)
+        if row is None:
+            self._session.add(PhotoFile(photo_id=photo_id, data=full.data, thumbnail=thumb.data))
+        else:
+            row.data, row.thumbnail = full.data, thumb.data
+        self._session.commit()
         return full
 
     def read(self, photo_id: str) -> bytes | None:
-        path = self.path_for(photo_id)
-        return path.read_bytes() if path.exists() else None
+        row = self._session.get(PhotoFile, photo_id)
+        if row is not None:
+            return row.data
+        legacy = self._legacy_path(photo_id)
+        return legacy.read_bytes() if legacy.is_file() else None
 
     def read_thumbnail(self, photo_id: str) -> bytes | None:
-        path = self.thumbnail_path_for(photo_id)
-        if path.exists():
-            return path.read_bytes()
-        return self.read(photo_id)
+        row = self._session.get(PhotoFile, photo_id)
+        if row is not None:
+            return row.thumbnail
+        legacy = self._legacy_path(photo_id, thumbnail=True)
+        return legacy.read_bytes() if legacy.is_file() else self.read(photo_id)
 
     def delete(self, photo_id: str) -> None:
-        for path in (self.path_for(photo_id), self.thumbnail_path_for(photo_id)):
-            path.unlink(missing_ok=True)
+        row = self._session.get(PhotoFile, photo_id)
+        if row is not None:
+            self._session.delete(row)
+            self._session.commit()

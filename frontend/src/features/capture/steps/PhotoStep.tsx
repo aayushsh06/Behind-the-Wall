@@ -34,7 +34,7 @@ export function PhotoStep({ photo, onPhoto, onClear, onNext }: PhotoStepProps) {
   return (
     <div className="flex flex-col gap-4">
       {shownUrl ? (
-        <div className="relative overflow-hidden rounded-lg bg-surface-2 ring-1 ring-line">
+        <div className="relative overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-line">
           <img src={shownUrl} alt="Wall preview" className="block w-full" />
           {upload.isPending ? (
             <div className="absolute inset-0 flex items-center justify-center bg-white/75 text-sm font-medium">

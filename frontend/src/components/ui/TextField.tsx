@@ -4,8 +4,8 @@ import { useId } from 'react'
 import { cn } from '@/lib/cn'
 
 const FIELD_CLASSES =
-  'w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-base text-fg ' +
-  'placeholder:text-fg-faint transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20'
+  'w-full rounded-xl border border-line-strong bg-surface px-3.5 py-2.5 text-base text-fg ' +
+  'placeholder:text-fg-faint transition-colors focus:border-ink focus:outline-none focus:ring-4 focus:ring-brand/25'
 
 interface BaseProps {
   label: string

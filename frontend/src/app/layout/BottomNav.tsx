@@ -10,7 +10,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur md:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <ul className="mx-auto flex max-w-lg">
@@ -21,13 +21,18 @@ export function BottomNav() {
               end={item.end}
               className={({ isActive }) =>
                 cn(
-                  'flex h-16 flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
-                  isActive ? 'text-accent' : 'text-fg-faint hover:text-fg-muted',
+                  'relative flex h-16 flex-col items-center justify-center gap-1 text-xs font-semibold transition-colors',
+                  isActive ? 'text-fg' : 'text-fg-faint hover:text-fg-muted',
                 )
               }
             >
-              {item.icon}
-              {item.label === 'Record a wall' ? 'Record' : item.label}
+              {({ isActive }) => (
+                <>
+                  {isActive ? <span aria-hidden="true" className="absolute top-0 h-0.5 w-10 rounded-full bg-brand" /> : null}
+                  {item.icon}
+                  {item.label === 'Record a wall' ? 'Record' : item.label}
+                </>
+              )}
             </NavLink>
           </li>
         ))}

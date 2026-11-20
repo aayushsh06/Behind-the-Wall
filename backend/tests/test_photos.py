@@ -43,14 +43,16 @@ def test_rewritten_photo_gets_new_etag(client: TestClient, uploaded_photo: dict)
 
     from app.api.deps import get_photo_storage
     from app.core.config import get_settings
+    from app.core.database import SessionLocal
 
     url = f"/api/photos/{uploaded_photo['id']}"
     old_etag = client.get(url).headers["etag"]
 
     replacement = BytesIO()
     Image.new("RGB", (800, 600), (10, 20, 30)).save(replacement, format="JPEG")
-    storage = get_photo_storage(get_settings())
-    storage.save(uploaded_photo["id"], replacement.getvalue())  # new bytes, same id
+    with SessionLocal() as session:
+        storage = get_photo_storage(get_settings(), session)
+        storage.save(uploaded_photo["id"], replacement.getvalue())  # new bytes, same id
 
     refreshed = client.get(url, headers={"If-None-Match": old_etag})
     assert refreshed.status_code == 200

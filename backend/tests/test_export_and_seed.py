@@ -86,22 +86,29 @@ def _seed() -> list[str]:
         owner = users.get_by_email(TEST_HOMEOWNER["email"])
         trade = users.get_by_email(TEST_USER["email"])
         seed = SeedService(
-            WallRepository(session), PhotoRepository(session), get_photo_storage(get_settings())
+            WallRepository(session),
+            PhotoRepository(session),
+            get_photo_storage(get_settings(), session),
         )
         return seed.seed_sample_home(owner.id, trade.id)
 
 
 def test_seed_is_idempotent(client: TestClient) -> None:
+    from app.services.seed_service import SAMPLE_WALLS
+
     first = _seed()
     second = _seed()
     assert first == second
-    assert len(first) == 6
+    assert len(first) == len(SAMPLE_WALLS) == 11
 
     walls = {w["id"]: w for w in client.get("/api/walls").json()}
     coverages = sorted(walls[i]["coverage"] for i in first)
-    assert coverages == ["full", "full", "full", "none", "partial", "partial"]
+    assert coverages == ["full"] * 8 + ["none"] + ["partial"] * 2
     with_photo = [walls[i] for i in first if walls[i]["photo_id"]]
-    assert len(with_photo) == 5
+    assert len(with_photo) == 10
+    # Every room has more than one wall.
+    rooms = [walls[i]["room"] for i in first]
+    assert all(rooms.count(room) >= 2 for room in rooms)
     for wall_id in first:
         wall = client.get(f"/api/walls/{wall_id}").json()
         if wall["photo_id"]:
@@ -115,13 +122,14 @@ def test_seed_is_idempotent(client: TestClient) -> None:
 
 def test_seed_refreshes_replaced_photo(client: TestClient) -> None:
     """Loading the sample home again rewrites photo bytes, so swapped assets take effect."""
-    from app.api.deps import get_photo_storage
-    from app.core.config import get_settings
-
     first = _seed()
     wall = client.get(f"/api/walls/{first[0]}").json()
-    storage = get_photo_storage(get_settings())
-    storage.path_for(wall["photo_id"]).write_bytes(b"corrupted")
+    from app.core.database import SessionLocal
+    from app.models import PhotoFile
+
+    with SessionLocal() as session:
+        session.get(PhotoFile, wall["photo_id"]).data = b"corrupted"
+        session.commit()
 
     _seed()
     photo = client.get(f"/api/photos/{wall['photo_id']}")

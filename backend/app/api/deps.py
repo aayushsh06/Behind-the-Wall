@@ -82,8 +82,8 @@ def get_viewer(user: CurrentUserDep, access: AccessRepoDep) -> Viewer:
 ViewerDep = Annotated[Viewer, Depends(get_viewer)]
 
 
-def get_photo_storage(settings: SettingsDep) -> PhotoStorage:
-    return PhotoStorage(settings)
+def get_photo_storage(settings: SettingsDep, session: SessionDep) -> PhotoStorage:
+    return PhotoStorage(settings, session)
 
 
 @lru_cache

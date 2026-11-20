@@ -44,9 +44,9 @@ export function UncoveredRegionEditor({ photo, region, onChange }: UncoveredRegi
             type="button"
             onClick={() => onChange(preset.region)}
             className={cn(
-              'rounded-md border py-2 text-sm font-medium transition-colors',
+              'rounded-full border py-2 text-sm font-semibold transition-colors',
               sameRegion(preset.region, region)
-                ? 'border-accent bg-accent text-white'
+                ? 'border-ink bg-ink text-white'
                 : 'border-line-strong bg-surface text-fg-muted hover:bg-surface-2 hover:text-fg',
             )}
           >

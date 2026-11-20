@@ -63,6 +63,38 @@ because SQLite and photos need a disk that survives restarts.
 | `BTW_PUBLIC_URL` | your site's address | base of invitation links |
 | `BTW_SMTP_HOST`, `BTW_SMTP_PORT`, `BTW_SMTP_USERNAME`, `BTW_SMTP_PASSWORD`, `BTW_SMTP_FROM` | optional | email invitations; without them the tradesperson sends the link |
 
+## Deploy to Vercel (free)
+
+The site runs on Vercel's free Hobby plan with a free Neon Postgres database. Whoever
+owns the GitHub repository sets it up once from the Vercel dashboard; after that every
+push to `main` deploys automatically.
+
+How it works:
+
+- `vercel.json` builds the frontend into static files and sends `/api/*` to
+  `api/index.py`, which runs the FastAPI backend as a serverless Python function
+  (packages in the root `requirements.txt`).
+- Serverless functions have no lasting disk, so records **and photos** are stored in
+  Postgres (photos as bytes in `photo_files`). The app reads `DATABASE_URL` (or
+  `POSTGRES_URL`), which the Neon integration sets automatically.
+- Phones shrink photos before uploading, which keeps requests under Vercel's 4.5 MB limit.
+- Tables and the demo accounts are created on the first request.
+
+One-time setup (repository owner):
+
+1. At [vercel.com/new](https://vercel.com/new), sign in with GitHub and **Import** this
+   repository. Use your personal (Hobby) account. Leave the root directory as the repo
+   root; the framework preset can stay "Other", because `vercel.json` supplies the build
+   settings. Click **Deploy**. The first deploy works but has no database yet.
+2. In the new project: **Storage → Create Database → Neon → Free plan**, and connect it
+   to the project for all environments. This adds `DATABASE_URL`.
+3. **Settings → Environment Variables**: add `BTW_SESSION_COOKIE_SECURE` = `true`.
+   Later, add `BTW_DEMO_ACCOUNTS` = `false` once real people use the site.
+4. **Deployments → ⋯ → Redeploy** so the database and settings take effect.
+5. Open the site and sign in with `homeowner@example.com` / `demo1234`.
+
+Locally nothing changes: without `DATABASE_URL` the app uses SQLite in `backend/data/`.
+
 ## Email
 
 Email is optional. Without it, a tradesperson sends an invitation from their own email app
@@ -99,7 +131,7 @@ make build   # production frontend build
 | Find a wall | Homeowner: walls grouped by room. Tradesperson: clients, then rooms. Search | R1 |
 | See what is unknown | Coverage banner + hatched "not inspected" region | R2 |
 | Read a record | Wall detail: numbered pins, items table, author, date | R3 |
-| Record a wall | Tradesperson: photo → wall size → details (homeowner email, invite if new) → tap-to-place items | R4 |
+| Record a wall | Tradesperson, on a phone or tablet: photo → wall size → details (homeowner email, invite if new) → tap-to-place items. On a desktop, recording and editing show a QR code to continue on the phone | R4 |
 | Compute positions | Drag two corner handles onto the wall and enter its size; every item's position is computed from the photo | R3, R4 |
 | Hand off | Wall goes to the homeowner's account; homeowner opens it as a PDF; share sheet sends the PDF or JSON | R5 |
 | Keep records | Stored server-side in SQLite + disk | R6 |

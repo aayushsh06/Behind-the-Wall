@@ -135,7 +135,19 @@ def test_demo_accounts_are_created_once_and_load_the_sample_home(tmp_path: Path)
             assert verify_password(account.password, user.password_hash)
 
         # The homeowner reads the whole sample home; the tradesperson recorded all of it.
-        assert visible == {"homeowner": 6, "tradesperson": 6}
+        assert visible == {"homeowner": 11, "tradesperson": 11}
+
+        # Sample walls added in a later version are filled in for existing demo accounts,
+        # without touching walls that are already there.
+        owner = UserRepository(session).get_by_email(DEMO_ACCOUNTS[0].email)
+        kept = WallRepository(session).list(Viewer(owner.id))[0]
+        kept.notes = "Edited during a demo"
+        newest = next(w for w in WallRepository(session).list(Viewer(owner.id)) if w.id != kept.id)
+        session.delete(newest)
+        session.commit()
+        ensure_demo_accounts(session, settings)
+        walls = {w.id: w for w in WallRepository(session).list(Viewer(owner.id))}
+        assert len(walls) == 11 and walls[kept.id].notes == "Edited during a demo"
         assert ensure_demo_accounts(session, settings) == []
 
         # A renamed demo account is put back the next time the app starts.

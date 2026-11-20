@@ -300,6 +300,105 @@ SAMPLE_WALLS: tuple[SampleWall, ...] = (
         ),
         notes="Furred-out foundation wall. No insulation or vapor barrier when opened.",
     ),
+    # ---- Second and third walls per room (crops of the same site photos) ----
+    SampleWall(
+        key="kitchen-window-right",
+        room="Kitchen",
+        label="Wall right of window",
+        author="Carpenter",
+        observed_date=date(2026, 3, 4),
+        coverage=Coverage.FULL,
+        photo=SamplePhoto(
+            asset="sink-wall.png", crop=Region(x=0.70, y=0.0, width=0.30, height=0.85)
+        ),
+        calibration=_calibration((0.0, 0.05), (1.0, 1.0), 36, 70),
+        markers=(
+            _line(UtilityType.FRAMING, 0.12, 0.98, 0.12, 0.05, "Stud, 16 in o.c.", "Left edge"),
+            _line(UtilityType.FRAMING, 0.57, 0.98, 0.57, 0.05, "Stud, 16 in o.c.", "Left stud"),
+            _point(UtilityType.OTHER, 0.82, 0.45, "R-13 kraft-faced insulation", "Right bay"),
+        ),
+        notes="No services in this bay. Insulation is intact behind the cabinet run.",
+    ),
+    SampleWall(
+        key="bath-left-of-vanity",
+        room="Bathroom",
+        label="Wall left of vanity",
+        author="Electrician",
+        observed_date=date(2026, 1, 20),
+        coverage=Coverage.FULL,
+        photo=SamplePhoto(
+            asset="plumbing-wall.png", crop=Region(x=0.24, y=0.10, width=0.24, height=0.75)
+        ),
+        calibration=_calibration((0.0, 0.0), (1.0, 1.0), 32, 72),
+        markers=(
+            _point(UtilityType.WIRE, 0.69, 0.37, "Junction box: fan and lights", "Right stud"),
+            _line(
+                UtilityType.WIRE, 0.22, 0.53, 0.98, 0.53, "12/2 NM to vanity light", "Mid-height"
+            ),
+            _line(
+                UtilityType.WIRE, 0.375, 0.05, 0.375, 0.62, "14/2 NM, fan circuit", "Down the bay"
+            ),
+            _line(UtilityType.FRAMING, 0.17, 0.98, 0.17, 0.02, "Stud, 16 in o.c.", "Left edge"),
+        ),
+        notes="Fan and light circuits share this bay. Box is 5 ft above the floor.",
+    ),
+    SampleWall(
+        key="basement-right-of-panel",
+        room="Basement",
+        label="Wall right of panel",
+        author="Electrician",
+        observed_date=date(2026, 2, 9),
+        coverage=Coverage.FULL,
+        photo=SamplePhoto(
+            asset="basement-alcove.avif", crop=Region(x=0.18, y=0.28, width=0.70, height=0.50)
+        ),
+        calibration=_calibration((0.0, 0.04), (1.0, 0.94), 40, 54),
+        markers=(
+            _line(UtilityType.WIRE, 0.02, 0.08, 0.98, 0.08, "14/2 NM along top plate", "Top plate"),
+            _line(UtilityType.FRAMING, 0.28, 0.94, 0.28, 0.04, "Stud, 24 in o.c.", "Left stud"),
+            _line(UtilityType.FRAMING, 0.64, 0.94, 0.64, 0.04, "Stud, 24 in o.c.", "Right stud"),
+            _point(UtilityType.OTHER, 0.46, 0.55, "Poured concrete, no moisture barrier", "Center"),
+        ),
+        notes="Cable is stapled to the top plate the full width of the wall.",
+    ),
+    SampleWall(
+        key="bedroom-behind-bed",
+        room="Bedroom",
+        label="Wall behind bed",
+        author="Carpenter",
+        observed_date=date(2025, 5, 15),
+        coverage=Coverage.FULL,
+        photo=SamplePhoto(
+            asset="framed-partition.png", crop=Region(x=0.0, y=0.12, width=0.30, height=0.70)
+        ),
+        calibration=_calibration((0.0, 0.0), (1.0, 1.0), 48, 80),
+        markers=(
+            _line(UtilityType.FRAMING, 0.17, 0.98, 0.17, 0.02, "Stud, 16 in o.c.", "Left edge"),
+            _line(UtilityType.FRAMING, 0.50, 0.98, 0.50, 0.02, "Stud, 16 in o.c.", "Center"),
+            _point(UtilityType.OTHER, 0.33, 0.45, "R-19 fiberglass batts", "Between studs"),
+        ),
+        notes="Exterior wall. Insulated, no services found.",
+    ),
+    SampleWall(
+        key="living-front-window",
+        room="Living Room",
+        label="Wall by front window",
+        author="Carpenter",
+        observed_date=date(2025, 8, 2),
+        coverage=Coverage.FULL,
+        photo=SamplePhoto(
+            asset="framed-partition.png", crop=Region(x=0.55, y=0.05, width=0.40, height=0.90)
+        ),
+        calibration=_calibration((0.0, 0.05), (1.0, 0.98), 60, 96),
+        markers=(
+            _line(
+                UtilityType.FRAMING, 0.21, 0.98, 0.21, 0.05, "Stud, 16 in o.c.", "Left of opening"
+            ),
+            _line(UtilityType.FRAMING, 0.53, 0.98, 0.53, 0.05, "Stud, 16 in o.c.", "Partition"),
+            _point(UtilityType.OTHER, 0.40, 0.38, "Window rough opening", "Behind partition"),
+        ),
+        notes="Temporary work lights only; no permanent wiring in this wall.",
+    ),
 )
 
 
@@ -311,14 +410,19 @@ class SeedService:
         self._photos = photos
         self._storage = storage
 
-    def seed_sample_home(self, owner_id: str, tradesperson_id: str) -> list[str]:
+    def seed_sample_home(
+        self, owner_id: str, tradesperson_id: str, *, only_missing: bool = False
+    ) -> list[str]:
         """Create or refresh a homeowner's sample walls and photos. Returns the wall IDs.
 
         Every wall is recorded as added by ``tradesperson_id``, so that account sees them
-        under this homeowner as a client.
+        under this homeowner as a client. With ``only_missing`` existing sample walls are
+        left untouched (keeping any edits) and only new ones are added.
         """
         ids: list[str] = []
         for sample in SAMPLE_WALLS:
+            if only_missing and self._walls.exists(sample.wall_id(owner_id)):
+                continue
             created_by_id = tradesperson_id
             photo_id = self._write_photo(sample, created_by_id) if sample.photo else None
             data = WallCreate(

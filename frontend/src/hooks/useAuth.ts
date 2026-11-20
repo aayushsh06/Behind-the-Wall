@@ -48,7 +48,7 @@ export function useLogout() {
     mutationFn: authApi.logout,
     onSuccess: () => {
       // Leave first, so the next sign-in starts at the wall list rather than returning here.
-      void navigate(routes.welcome(), { replace: true })
+      void navigate(routes.home(), { replace: true })
       setSignedInUser(queryClient, null)
     },
   })

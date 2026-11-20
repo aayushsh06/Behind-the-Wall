@@ -57,7 +57,7 @@ export function RegisterPage() {
 
   return (
     <AuthCard>
-      <PageHeader title="Create an account" backTo={routes.welcome()} />
+      <PageHeader title="Create an account" backTo={routes.home()} />
 
       {invitedEmail ? (
         <div className="mb-5">
@@ -107,7 +107,7 @@ export function RegisterPage() {
 
       <p className="mt-5 text-center text-sm text-fg-muted">
         Already have an account?{' '}
-        <Link to={routes.login()} state={state} className="font-medium text-accent hover:underline">
+        <Link to={routes.login()} state={state} className="font-semibold text-fg underline decoration-brand decoration-2 underline-offset-4 hover:decoration-ink">
           Sign in
         </Link>
       </p>

@@ -10,7 +10,7 @@ export function WallSearch({ value, onChange, placeholder = 'Search by room or w
       <span className="sr-only">{placeholder}</span>
       <svg
         aria-hidden="true"
-        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-faint"
+        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fg-faint"
         width="18"
         height="18"
         viewBox="0 0 24 24"
@@ -27,7 +27,7 @@ export function WallSearch({ value, onChange, placeholder = 'Search by room or w
         placeholder={placeholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-11 w-full rounded-md border border-line-strong bg-surface pl-10 pr-3.5 text-base text-fg placeholder:text-fg-faint transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+        className="h-12 w-full rounded-full border border-line bg-surface pl-11 pr-4 text-base text-fg placeholder:text-fg-faint transition-colors focus:border-ink focus:outline-none focus:ring-2 focus:ring-brand/25"
       />
     </label>
   )

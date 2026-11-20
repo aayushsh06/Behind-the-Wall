@@ -25,8 +25,8 @@ export function MarkerRow({ index, marker, calibration, selected, onSelect }: Ma
         onClick={onSelect}
         aria-pressed={selected}
         className={cn(
-          'flex w-full items-start gap-3 rounded-md border p-3.5 text-left transition-colors',
-          selected ? 'border-accent bg-accent/5 ring-1 ring-accent' : 'border-line bg-surface hover:border-line-strong',
+          'flex w-full items-start gap-3 rounded-xl border p-3.5 text-left transition-colors',
+          selected ? 'border-ink bg-brand-soft/60 ring-1 ring-ink' : 'border-line bg-surface hover:border-line-strong',
         )}
       >
         <span
