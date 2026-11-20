@@ -19,11 +19,16 @@ def _build_engine():
     if url.startswith("sqlite"):
         settings.data_dir.mkdir(parents=True, exist_ok=True)
         return create_engine(url, connect_args={"check_same_thread": False})
+    # Hosted Postgres often sits behind a transaction-mode connection pooler (Neon's
+    # does), where server-side prepared statements can vanish between transactions.
+    connect_args = {"prepare_threshold": None}
     # Serverless instances freeze between requests, so don't keep idle connections
     # around there; elsewhere a small pool with liveness checks is fine.
     if ON_VERCEL:
-        return create_engine(url, poolclass=NullPool)
-    return create_engine(url, pool_pre_ping=True, pool_size=5, max_overflow=5)
+        return create_engine(url, poolclass=NullPool, connect_args=connect_args)
+    return create_engine(
+        url, pool_pre_ping=True, pool_size=5, max_overflow=5, connect_args=connect_args
+    )
 
 
 engine = _build_engine()

@@ -2,7 +2,9 @@
 
 On Vercel (``VERCEL`` is set) the filesystem is read-only apart from /tmp, so records
 must live in Postgres: the database URL is taken from ``BTW_DATABASE_URL`` or, as the
-Vercel/Neon integration provides it, ``DATABASE_URL`` / ``POSTGRES_URL``.
+Vercel/Neon integration provides it, ``DATABASE_URL`` / ``POSTGRES_URL``. The integration
+can also add a custom prefix (e.g. ``MYAPP_DATABASE_URL``); any single such variable is
+used too.
 """
 
 import os
@@ -62,7 +64,7 @@ class Settings(BaseSettings):
 
     @property
     def resolved_database_url(self) -> str:
-        url = self.database_url
+        url = self.database_url or _prefixed_database_url()
         if not url:
             return f"sqlite:///{self.data_dir / 'behind_the_wall.db'}"
         # Hosted Postgres hands out postgres:// URLs; SQLAlchemy needs the driver named.
@@ -70,6 +72,19 @@ class Settings(BaseSettings):
             if url.startswith(prefix):
                 return "postgresql+psycopg://" + url[len(prefix) :]
         return url
+
+
+def _prefixed_database_url() -> str | None:
+    """A Neon/Vercel variable like ``MYAPP_DATABASE_URL`` (the pooled connection).
+
+    Used only when exactly one exists, so an unrelated variable is never picked by mistake.
+    """
+    found = [
+        value
+        for name, value in os.environ.items()
+        if name.endswith("_DATABASE_URL") and not name.startswith("BTW_") and value
+    ]
+    return found[0] if len(found) == 1 else None
 
 
 @lru_cache

@@ -76,7 +76,8 @@ How it works:
   (packages in the root `requirements.txt`).
 - Serverless functions have no lasting disk, so records **and photos** are stored in
   Postgres (photos as bytes in `photo_files`). The app reads `DATABASE_URL` (or
-  `POSTGRES_URL`), which the Neon integration sets automatically.
+  `POSTGRES_URL`), which the Neon integration sets automatically; if the integration
+  adds a prefix (e.g. `BEHINDTHEWALL_DATABASE_URL`), that is picked up too.
 - Phones shrink photos before uploading, which keeps requests under Vercel's 4.5 MB limit.
 - Tables and the demo accounts are created on the first request.
 
