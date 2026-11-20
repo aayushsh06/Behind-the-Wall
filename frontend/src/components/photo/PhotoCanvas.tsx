@@ -4,7 +4,7 @@ import type { MouseEvent, PointerEvent, ReactNode } from 'react'
 import type { CalibrationCorner } from '@/components/photo/CalibrationOverlay'
 import { CalibrationOverlay } from '@/components/photo/CalibrationOverlay'
 import type { Bounds } from '@/components/photo/bounds'
-import { clampToBounds, insideBounds, strokeLength } from '@/components/photo/bounds'
+import { clampToBounds, insideBounds, snapToAxis, strokeLength } from '@/components/photo/bounds'
 import type { Point } from '@/components/photo/coordinates'
 import { toNormalizedPoint, toPercentStyle } from '@/components/photo/coordinates'
 import { Handle } from '@/components/photo/Handle'
@@ -44,6 +44,8 @@ interface PhotoCanvasProps {
   calibrationEditable?: boolean
   /** Freehand drawing: the colour of the stroke while drawing. Set to enable drawing. */
   drawColor?: string | null
+  /** Draw a straight line from where the finger lands to where it lifts (else freehand). */
+  straight?: boolean
   /** Called with the finished stroke (normalized points) when the finger lifts. */
   onDrawComplete?: (points: Point[]) => void
   /** A two-finger zoom is in progress: drop any stroke and ignore taps until it ends. */
@@ -98,6 +100,7 @@ export function PhotoCanvas({
   editable = false,
   calibrationEditable = false,
   drawColor = null,
+  straight = false,
   onDrawComplete,
   gestureActive = false,
   drawBounds = null,
@@ -140,6 +143,11 @@ export function PhotoCanvas({
     if (!stroke || gestureActive || !surfaceRef.current) return
     const raw = pointAt(event)
     const next = drawBounds ? clampToBounds(raw, drawBounds) : raw
+    if (straight) {
+      // Start stays put; the end follows the finger, squared up when nearly level/plumb.
+      setStroke([stroke[0]!, snapToAxis(stroke[0]!, next, aspectRatio)])
+      return
+    }
     const last = stroke[stroke.length - 1]!
     if (Math.hypot(next.x - last.x, next.y - last.y) < MIN_STROKE_STEP) return
     setStroke([...stroke, next])

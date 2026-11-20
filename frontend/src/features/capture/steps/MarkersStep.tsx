@@ -27,7 +27,7 @@ interface MarkersStepProps {
   onSubmit: () => void
 }
 
-type DrawStatus = { state: 'snapping' } | { state: 'snapped' | 'kept'; label: string } | null
+type DrawStatus = { state: 'snapping' } | { state: 'snapped' | 'kept' | 'line'; label: string } | null
 
 /** Smooth a stroke given in normalized coordinates (smoothing works in pixel units). */
 function smoothNormalized(points: Point[]): Point[] {
@@ -90,10 +90,18 @@ export function MarkersStep({ draft, dispatch, submitting, submitError, submitLa
 
   const instructions =
     tool === 'scroll'
-      ? 'Scroll the page and pinch to zoom without marking anything. Choose Draw run to trace a run, or Add point to mark a single spot. Marks stay inside the wall frame.'
+      ? 'Scroll the page and pinch to zoom without marking anything. Choose Freehand to trace a run that bends, or Straight for a straight one. Marks stay inside the wall frame.'
       : tool === 'draw'
-      ? `Trace the ${label} with your finger inside the wall frame; swipe outside it to scroll.${snap ? ` When you lift, it snaps to the ${label} in the photo.` : ''} Pinch with two fingers to zoom in where cables run close together.`
-      : `Tap the photo where each ${label} item is, like a box or valve. Drag a pin to adjust; pinch to zoom.`
+        ? `Trace the ${label} with your finger inside the wall frame; swipe outside it to scroll.${snap ? ` When you lift, it snaps to the ${label} in the photo.` : ''} Pinch with two fingers to zoom in where cables run close together.`
+        : `Put your finger where the ${label} starts inside the wall frame, drag to where it ends, and lift. Nearly level or plumb lines are squared up. Swipe outside the frame to scroll.`
+
+  const handleLineComplete = (stroke: Point[]) => {
+    const start = stroke[0]
+    const end = stroke[stroke.length - 1]
+    if (!start || !end) return
+    dispatch({ type: 'addLineMarker', start, end, utility })
+    setStatus({ state: 'line', label })
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -111,7 +119,7 @@ export function MarkersStep({ draft, dispatch, submitting, submitError, submitLa
             onSnapChange={setSnap}
           />
           <p className="text-sm leading-relaxed text-fg-muted">{instructions}</p>
-          <ZoomViewport drawing={tool === 'draw'}>
+          <ZoomViewport drawing={tool !== 'scroll'}>
             {({ zoom, pinching }) => (
               <PhotoCanvas
                 src={photo.url}
@@ -123,16 +131,20 @@ export function MarkersStep({ draft, dispatch, submitting, submitError, submitLa
                 selectedMarkerId={draft.selectedMarkerId}
                 editable
                 gestureActive={pinching}
-                drawColor={tool === 'draw' ? UTILITY_META[utility].hex : null}
+                drawColor={tool === 'scroll' ? null : UTILITY_META[utility].hex}
+                straight={tool === 'line'}
                 drawBounds={bounds}
                 pinsDraggable={tool !== 'scroll'}
                 dimOutsideFrame={tool !== 'scroll'}
-                onDrawComplete={(stroke) => void handleDrawComplete(stroke, zoom)}
-                onPlace={tool === 'point' ? (point) => dispatch({ type: 'addMarker', point, utility }) : undefined}
+                onDrawComplete={(stroke) =>
+                  tool === 'line' ? handleLineComplete(stroke) : void handleDrawComplete(stroke, zoom)
+                }
                 onSelectMarker={(id) => dispatch({ type: 'selectMarker', id })}
-                onMoveMarker={(id, point) => dispatch({ type: 'moveMarker', id, point })}
+                onMoveMarker={(id, point) => dispatch({ type: 'moveMarker', id, point: clampToBounds(point, bounds) })}
                 onTranslateMarker={(id, dx, dy) => dispatch({ type: 'translateMarker', id, dx, dy })}
-                onMoveMarkerEndpoint={(id, endpoint, point) => dispatch({ type: 'moveMarkerEndpoint', id, endpoint, point })}
+                onMoveMarkerEndpoint={(id, endpoint, point) =>
+                  dispatch({ type: 'moveMarkerEndpoint', id, endpoint, point: clampToBounds(point, bounds) })
+                }
               />
             )}
           </ZoomViewport>
@@ -144,11 +156,13 @@ export function MarkersStep({ draft, dispatch, submitting, submitError, submitLa
               <span>
                 {status.state === 'snapping'
                   ? 'Snapping to the photo…'
+                  : status.state === 'line'
+                    ? `Straight ${status.label} added. Tap its number to add details or adjust its ends.`
                   : status.state === 'snapped'
                     ? `Snapped to the ${status.label} in the photo. Tap its number to add details.`
                     : `Kept as drawn${snap ? ' (nothing clear to snap to)' : ''}. Tap its number to add details.`}
               </span>
-              {status.state !== 'snapping' && lastMarker?.kind === 'path' ? (
+              {status.state !== 'snapping' && (lastMarker?.kind === 'path' || lastMarker?.kind === 'line') ? (
                 <Button
                   size="sm"
                   variant="secondary"

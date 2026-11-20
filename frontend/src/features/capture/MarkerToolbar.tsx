@@ -3,7 +3,7 @@ import { UTILITY_TYPES } from '@/domain/types'
 import { UTILITY_META } from '@/domain/utility'
 import { cn } from '@/lib/cn'
 
-export type MarkerTool = 'scroll' | 'draw' | 'point'
+export type MarkerTool = 'scroll' | 'draw' | 'line'
 
 interface MarkerToolbarProps {
   utility: UtilityType
@@ -15,14 +15,15 @@ interface MarkerToolbarProps {
 }
 
 // "Scroll" is the safe default: the photo scrolls and zooms like the rest of the page, so
-// nothing is drawn by accident. Drawing or placing only happens once chosen.
+// nothing is drawn by accident. Freehand follows the finger (and can snap to the photo);
+// Straight draws a straight line from where the finger lands to where it lifts.
 const TOOLS: { value: MarkerTool; label: string }[] = [
   { value: 'scroll', label: 'Scroll' },
-  { value: 'draw', label: 'Draw run' },
-  { value: 'point', label: 'Add point' },
+  { value: 'draw', label: 'Freehand' },
+  { value: 'line', label: 'Straight' },
 ]
 
-/** Choose what is being marked, then how: trace a run freehand, or tap a single spot. */
+/** Choose what is being marked, then how: scroll, trace a run freehand, or draw a straight line. */
 export function MarkerToolbar({ utility, onUtilityChange, tool, onToolChange, snap, onSnapChange }: MarkerToolbarProps) {
   return (
     <div className="flex flex-col gap-4">

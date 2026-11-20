@@ -115,6 +115,7 @@ export type DraftAction =
   | { type: 'setCalibrationSize'; changes: Partial<Pick<WallCalibration, 'width' | 'height'>> & { unit?: LengthUnit } }
   | { type: 'addMarker'; point: Point; utility: UtilityType }
   | { type: 'addPathMarker'; points: Point[]; utility: UtilityType }
+  | { type: 'addLineMarker'; start: Point; end: Point; utility: UtilityType }
   | { type: 'updateMarker'; id: string; changes: Partial<Omit<Marker, 'id'>> }
   | { type: 'moveMarker'; id: string; point: Point }
   | { type: 'translateMarker'; id: string; dx: number; dy: number }
@@ -240,6 +241,18 @@ export function draftReducer(draft: WallDraft, action: DraftAction): WallDraft {
       })
       // Not selected, so the details sheet doesn't cover the photo: the tradesperson
       // first sees where the run snapped, then taps its number to add details.
+      return { ...draft, markers: [...draft.markers, marker], selectedMarkerId: null }
+    }
+    case 'addLineMarker': {
+      const marker = newMarker({
+        kind: 'line',
+        type: action.utility,
+        x: clamp01(action.start.x),
+        y: clamp01(action.start.y),
+        x2: clamp01(action.end.x),
+        y2: clamp01(action.end.y),
+      })
+      // Like a drawn run: not selected, so the sheet doesn't cover the photo.
       return { ...draft, markers: [...draft.markers, marker], selectedMarkerId: null }
     }
     case 'updateMarker':

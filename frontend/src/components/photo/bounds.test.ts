@@ -21,3 +21,15 @@ describe('wall frame bounds', () => {
     expect(strokeLength([{ x: 0.5, y: 0.5 }])).toBe(0)
   })
 })
+
+describe('straight lines', () => {
+  it('squares up nearly level and nearly plumb lines, judged on screen', async () => {
+    const { snapToAxis } = await import('@/components/photo/bounds')
+    const start = { x: 0.2, y: 0.5 }
+    // On a square photo, 3° off level becomes level and 87° becomes plumb.
+    expect(snapToAxis(start, { x: 0.6, y: 0.521 }, 1)).toEqual({ x: 0.6, y: 0.5 })
+    expect(snapToAxis(start, { x: 0.215, y: 0.8 }, 1)).toEqual({ x: 0.2, y: 0.8 })
+    // A clear diagonal is left alone.
+    expect(snapToAxis(start, { x: 0.5, y: 0.8 }, 1)).toEqual({ x: 0.5, y: 0.8 })
+  })
+})
