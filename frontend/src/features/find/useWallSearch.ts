@@ -14,6 +14,10 @@ export interface ClientGroupData {
   client: AccountBrief & { pending?: boolean }
   rooms: RoomGroupData[]
   wallCount: number
+  /** Most recent update across the client's walls (ISO timestamp). */
+  updatedAt: string
+  /** Up to three walls with photos, newest first, for a preview strip. */
+  previews: WallSummary[]
 }
 
 function matches(wall: WallSummary, needle: string): boolean {
@@ -44,7 +48,16 @@ function groupByClient(walls: WallSummary[]): ClientGroupData[] {
   }
   return [...byClient.values()]
     .sort((a, b) => a.client.name.localeCompare(b.client.name))
-    .map(({ client, walls: items }) => ({ client, rooms: groupByRoom(items), wallCount: items.length }))
+    .map(({ client, walls: items }) => {
+      const newest = [...items].sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+      return {
+        client,
+        rooms: groupByRoom(items),
+        wallCount: items.length,
+        updatedAt: newest[0]?.updated_at ?? '',
+        previews: newest.filter((w) => w.photo_id).slice(0, 3),
+      }
+    })
 }
 
 /**

@@ -23,11 +23,13 @@ export function useKnownClients(): AccountBrief[] {
 }
 
 /** The homeowner a wall is for; an invited email stands in until they sign up. */
-export function clientOf(wall: WallSummary): (AccountBrief & { pending?: boolean }) | null {
+export function clientOf(
+  wall: Pick<WallSummary, 'owner' | 'pending_owner_email'>,
+): (AccountBrief & { pending?: boolean }) | null {
   if (wall.owner) return wall.owner
   if (wall.pending_owner_email) {
     const email = wall.pending_owner_email
-    return { id: `pending:${email}`, name: email, email, role: 'homeowner', pending: true }
+    return { id: `invite:${email}`, name: email, email, role: 'homeowner', pending: true }
   }
   return null
 }

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 
 import { routes } from '@/app/routes'
 import { Button, EmptyState, ErrorMessage, PageHeader, Spinner } from '@/components/ui'
-import { ClientGroup } from '@/features/find/ClientGroup'
+import { ClientRow } from '@/features/find/ClientRow'
 import { RoomGroup } from '@/features/find/RoomGroup'
 import { WallSearch } from '@/features/find/WallSearch'
 import { useWallSearch } from '@/features/find/useWallSearch'
@@ -21,7 +21,7 @@ const COPY = {
   },
   tradesperson: {
     title: 'Clients',
-    subtitle: 'Homeowners you’ve recorded walls for, and the walls you recorded',
+    subtitle: 'Homeowners you’ve recorded walls for. Open one to see their walls.',
     search: 'Search by client, room, or wall',
     emptyTitle: 'No walls recorded yet',
     emptyBody: 'Record a wall while it’s open and add it to the homeowner’s account using their email address.',
@@ -70,11 +70,11 @@ export function WallListPage() {
       ) : null}
 
       {isTrade ? (
-        <div className="flex flex-col gap-6">
+        <ul className="grid gap-3 lg:grid-cols-2">
           {clients.map((group) => (
-            <ClientGroup key={group.client.id} {...group} />
+            <ClientRow key={group.client.id} {...group} />
           ))}
-        </div>
+        </ul>
       ) : (
         <div className="flex flex-col gap-12">
           {groups.map((group) => (

@@ -94,6 +94,14 @@ describe('snapStroke', () => {
     expect(meanError(nearLower.points, lower)).toBeLessThan(3)
   })
 
+  it('centres on a wide pipe rather than hugging the edge it was traced along', () => {
+    const image = photo(wave, 14) // a 14 px wide "pipe"
+    const alongEdge = handDrawn(wave, 6) // traced near its lower edge
+    const result = snapStroke(image, alongEdge, { corridor: 20 })
+    expect(result.snapped).toBe(true)
+    expect(meanError(result.points, wave)).toBeLessThan(2)
+  })
+
   it('treats a tap-sized stroke as too short to snap', () => {
     const result = snapStroke(photo(wave), [{ x: 100, y: 80 }, { x: 103, y: 81 }])
     expect(result.snapped).toBe(false)

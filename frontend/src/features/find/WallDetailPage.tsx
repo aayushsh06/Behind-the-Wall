@@ -10,6 +10,7 @@ import { CoverageBanner } from '@/features/find/CoverageBanner'
 import { MarkerList } from '@/features/find/MarkerList'
 import { WallActions } from '@/features/find/WallActions'
 import { WallPhoto } from '@/features/find/WallPhoto'
+import { clientOf } from '@/features/capture/useKnownRooms'
 import { InvitePanel } from '@/features/handoff/InvitePanel'
 import { useSignedInUser } from '@/hooks/useAuth'
 import { useWall } from '@/hooks/useWall'
@@ -35,7 +36,7 @@ export function WallDetailPage() {
       <PageHeader
         title={wall.label}
         subtitle={`${wall.room} · Recorded by ${wall.author} · ${formatDate(wall.observed_date)}`}
-        backTo={routes.home()}
+        backTo={readOnly ? routes.home() : routes.client(clientOf(wall)?.id ?? '')}
         action={
           <WallActions
             wallId={wall.id}

@@ -18,6 +18,13 @@
  * colour. That keeps the run on one cable in a bundle and centres it on the cable
  * rather than its edge. The second route is used only if it really stays on that colour.
  *
+ * This runs twice: once on the local-contrast map, and once adding a multi-scale ridge
+ * ("vesselness") filter from the Hessian, which responds to the centre line of tube
+ * shapes and prefers ones running the same way as the stroke. The ridge result centres
+ * better, but where a stroke falls between two cables it can prefer the more prominent
+ * one, so it is used only when it stays about as close to the stroke as the other.
+ * Finally each point is nudged across the band to its weighted centre.
+ *
  * All coordinates here are pixels of the analysed image. Pure functions, no DOM.
  */
 
@@ -38,6 +45,10 @@ export interface SnapOptions {
   corridor?: number
   /** Box-blur radius (px) for the local average the feature map compares against. */
   blurRadius?: number
+  /** Weight (0..1) of the ridge (vesselness) filter in the feature map. */
+  ridge?: number
+  /** Nudge the final route onto the centre line of the band it follows. */
+  refine?: boolean
 }
 
 export interface SnapResult {
@@ -46,18 +57,62 @@ export interface SnapResult {
   snapped: boolean
 }
 
+interface Candidate extends SnapResult {
+  /** Average distance (px) from the route to the drawn stroke. */
+  offset: number
+}
+
 const MIN_STROKE_PX = 8
 // Pull towards the drawn stroke: loose while finding the feature, firm while following it.
 const STAY_FIND = 0.6
 const STAY_FOLLOW = 2.5
 const MAX_POINTS = 120
+// Defaults chosen by benchmarking on real wall photos: refining the centre line helped on
+// every feature tested; the ridge filter is used through the two-candidate choice below.
+const RIDGE_WEIGHT = 0
+const REFINE = true
+// How much further from the stroke (px) the ridge route may be and still be preferred.
+const OFFSET_MARGIN_PX = 3
+// Above this many pixels in the working box, skip the (slower) ridge candidate.
+const MAX_RIDGE_AREA = 160_000
+const RIDGE_SCALES = [1.5, 3, 5]
 
 export function snapStroke(image: PixelImage, stroke: Pt[], options: SnapOptions = {}): SnapResult {
+  if (options.ridge !== undefined) return toResult(snapOnce(image, stroke, options))
+  // Two candidates: local contrast, and the ridge filter. The ridge filter centres far
+  // better on cables and pipes, but where the stroke falls between two cables it can
+  // prefer the more prominent neighbour. The tradesperson traced the one they meant, so
+  // the ridge route is used only when it stays as close to the stroke as the other.
+  const plain = snapOnce(image, stroke, { ...options, ridge: 0 })
+  // Very long strokes cover most of the photo; the ridge filter would take seconds on a
+  // phone there, and long runs are usually straight, where the contrast route does well.
+  if (!plain.snapped || boxArea(image, stroke, options) > MAX_RIDGE_AREA) return toResult(plain)
+  const tubes = snapOnce(image, stroke, { ...options, ridge: 1 })
+  // The ridge filter's scores are relative, so on a photo with nothing to snap to it can
+  // still "find" a line in the noise. It may only improve a stroke the contrast method
+  // already found a real feature for, never rescue one it rejected.
+  if (!plain.snapped || !tubes.snapped) return toResult(plain)
+  return toResult(tubes.offset <= plain.offset + OFFSET_MARGIN_PX ? tubes : plain)
+}
+
+/** Pixels in the stroke's working box (bounding box grown by the corridor). */
+function boxArea(image: PixelImage, stroke: Pt[], options: SnapOptions): number {
+  const R = options.corridor ?? Math.max(10, Math.round(0.03 * Math.max(image.width, image.height)))
+  const xs = stroke.map((p) => p.x)
+  const ys = stroke.map((p) => p.y)
+  return (Math.max(...xs) - Math.min(...xs) + 2 * R) * (Math.max(...ys) - Math.min(...ys) + 2 * R)
+}
+
+function toResult({ points, snapped }: Candidate): SnapResult {
+  return { points, snapped }
+}
+
+function snapOnce(image: PixelImage, stroke: Pt[], options: SnapOptions): Candidate {
   const { width, height, data } = image
   const resampled = resample(stroke, 1.5)
   const drawnLength = polylineLength(resampled)
   if (resampled.length < 2 || drawnLength < MIN_STROKE_PX) {
-    return { points: smoothStroke(stroke), snapped: false }
+    return { points: smoothStroke(stroke), snapped: false, offset: Number.POSITIVE_INFINITY }
   }
 
   const R = options.corridor ?? Math.max(10, Math.round(0.03 * Math.max(width, height)))
@@ -73,6 +128,16 @@ export function snapStroke(image: PixelImage, stroke: Pt[], options: SnapOptions
 
   const dist = strokeDistance(resampled, minX, minY, bw, bh)
   const feature = featureMap(data, width, height, minX, minY, bw, bh, r, dist, R)
+  const ridgeWeight = options.ridge ?? RIDGE_WEIGHT
+  if (ridgeWeight > 0) {
+    // Tube-shaped structures (wires, pipes), favouring ones running the way the stroke does.
+    const tangent = strokeTangents(resampled, minX, minY, bw, bh, dist)
+    const ridge = ridgeMap(data, width, height, minX, minY, bw, bh, dist, R, tangent)
+    normaliseInCorridor(feature, dist, R)
+    for (let i = 0; i < feature.length; i++) {
+      feature[i] = (1 - ridgeWeight) * feature[i]! + ridgeWeight * ridge[i]!
+    }
+  }
 
   // Normalise by the strongest feature in the corridor (with a floor, so a flat area's
   // noise isn't stretched into fake features).
@@ -101,11 +166,11 @@ export function snapStroke(image: PixelImage, stroke: Pt[], options: SnapOptions
 
   // Pass 1: follow whatever stands out from its surroundings, loosely tied to the stroke.
   const first = route(feature, STAY_FIND)
-  if (!first) return { points: smoothStroke(stroke), snapped: false }
+  if (!first) return { points: smoothStroke(stroke), snapped: false, offset: Number.POSITIVE_INFINITY }
   const pathMean = first.reduce((sum, i) => sum + feature[i]!, 0) / first.length
   const convincing =
     pathMean > 0.35 && pathMean > corridorMean * 1.25 && polylineLength(toPixels(first)) < drawnLength * 2.5
-  if (!convincing) return { points: smoothStroke(stroke), snapped: false }
+  if (!convincing) return { points: smoothStroke(stroke), snapped: false, offset: Number.POSITIVE_INFINITY }
 
   // Pass 2: stay on the colour the first route found, held closer to the stroke so it
   // keeps to the nearest cable of that colour rather than a parallel one.
@@ -120,7 +185,21 @@ export function snapStroke(image: PixelImage, stroke: Pt[], options: SnapOptions
     if (onColour > 0.5 && polylineLength(toPixels(second)) < drawnLength * 2.5) best = second
   }
 
-  return { points: limitPoints(simplify(movingAverage(toPixels(best), 3), 1)), snapped: true }
+  let pixels = toPixels(best)
+  if (options.refine ?? REFINE) {
+    const score = best === first ? feature : combined
+    pixels = refineCentreline(resample(pixels, 2), score, dist, R, minX, minY, bw, bh)
+  }
+  const points = limitPoints(simplify(movingAverage(pixels, 3), 1))
+  const along = resample(points, 2)
+  let offset = 0
+  for (const q of along) {
+    const ix = clampInt(Math.round(q.x) - minX, 0, bw - 1)
+    const iy = clampInt(Math.round(q.y) - minY, 0, bh - 1)
+    offset += dist[iy * bw + ix]!
+  }
+  offset /= Math.max(1, along.length)
+  return { points, snapped: true, offset }
 }
 
 /** The drawn stroke, de-jittered: simplified, then rounded off with one Chaikin pass. */
@@ -416,6 +495,259 @@ function colourSimilarity(
   return out
 }
 
+function normaliseInCorridor(values: Float32Array, dist: Float32Array, R: number): void {
+  let max = 0
+  for (let i = 0; i < values.length; i++) if (dist[i]! <= R) max = Math.max(max, values[i]!)
+  if (max <= 0) return
+  for (let i = 0; i < values.length; i++) values[i] = Math.min(1, values[i]! / max)
+}
+
+/**
+ * Direction of the stroke (radians) at the nearest stroke point, for every pixel in the
+ * box: copied outward from the stroke along with the chamfer distance.
+ */
+function strokeTangents(
+  stroke: Pt[],
+  minX: number,
+  minY: number,
+  bw: number,
+  bh: number,
+  dist: Float32Array,
+): Float32Array {
+  const angle = new Float32Array(bw * bh)
+  const owner = new Float32Array(bw * bh).fill(Number.POSITIVE_INFINITY)
+  for (let k = 0; k < stroke.length; k++) {
+    const a = stroke[Math.max(0, k - 2)]!
+    const b = stroke[Math.min(stroke.length - 1, k + 2)]!
+    const x = Math.round(stroke[k]!.x) - minX
+    const y = Math.round(stroke[k]!.y) - minY
+    if (x < 0 || y < 0 || x >= bw || y >= bh) continue
+    angle[y * bw + x] = Math.atan2(b.y - a.y, b.x - a.x)
+    owner[y * bw + x] = 0
+  }
+  // Two sweeps: each pixel takes the angle of whichever already-visited neighbour is
+  // closest to the stroke.
+  const take = (i: number, j: number, best: number) => {
+    if (dist[j]! < best) {
+      angle[i] = angle[j]!
+      return dist[j]!
+    }
+    return best
+  }
+  for (let y = 0; y < bh; y++) {
+    for (let x = 0; x < bw; x++) {
+      const i = y * bw + x
+      if (owner[i] === 0) continue
+      let best = owner[i]!
+      if (x > 0) best = take(i, i - 1, best)
+      if (y > 0) {
+        best = take(i, i - bw, best)
+        if (x > 0) best = take(i, i - bw - 1, best)
+        if (x < bw - 1) best = take(i, i - bw + 1, best)
+      }
+      owner[i] = best
+    }
+  }
+  for (let y = bh - 1; y >= 0; y--) {
+    for (let x = bw - 1; x >= 0; x--) {
+      const i = y * bw + x
+      if (owner[i] === 0) continue
+      let best = owner[i]!
+      if (x < bw - 1) best = take(i, i + 1, best)
+      if (y < bh - 1) {
+        best = take(i, i + bw, best)
+        if (x < bw - 1) best = take(i, i + bw + 1, best)
+        if (x > 0) best = take(i, i + bw - 1, best)
+      }
+      owner[i] = best
+    }
+  }
+  return angle
+}
+
+/**
+ * Gaussian blur of one channel over a region (row-major, w × h), approximated by three
+ * box blurs with running sums: the cost doesn't grow with sigma, which matters on phones.
+ */
+function gaussianBlur(src: Float32Array, w: number, h: number, sigma: number): Float32Array {
+  // Box widths whose three-pass convolution matches the Gaussian's variance.
+  const ideal = Math.sqrt((12 * sigma * sigma) / 3 + 1)
+  let lower = Math.floor(ideal)
+  if (lower % 2 === 0) lower--
+  const upper = lower + 2
+  const m = Math.round((12 * sigma * sigma - 3 * lower * lower - 12 * lower - 9) / (-4 * lower - 4))
+  let a = Float32Array.from(src)
+  let b = new Float32Array(w * h)
+  for (let pass = 0; pass < 3; pass++) {
+    const radius = ((pass < m ? lower : upper) - 1) / 2
+    boxBlurRows(a, b, w, h, radius)
+    boxBlurColumns(b, a, w, h, radius)
+  }
+  b = a
+  return b
+}
+
+function boxBlurRows(src: Float32Array, dst: Float32Array, w: number, h: number, r: number): void {
+  const scale = 1 / (2 * r + 1)
+  // Clamped source offsets, computed once instead of per pixel.
+  const add = new Int32Array(w)
+  const sub = new Int32Array(w)
+  for (let x = 0; x < w; x++) {
+    add[x] = Math.min(w - 1, x + r + 1)
+    sub[x] = Math.max(0, x - r)
+  }
+  for (let y = 0; y < h; y++) {
+    const row = y * w
+    let acc = 0
+    for (let k = -r; k <= r; k++) acc += src[row + (k < 0 ? 0 : k >= w ? w - 1 : k)]!
+    for (let x = 0; x < w; x++) {
+      dst[row + x] = acc * scale
+      acc += src[row + add[x]!]! - src[row + sub[x]!]!
+    }
+  }
+}
+
+function boxBlurColumns(src: Float32Array, dst: Float32Array, w: number, h: number, r: number): void {
+  const scale = 1 / (2 * r + 1)
+  const add = new Int32Array(h)
+  const sub = new Int32Array(h)
+  for (let y = 0; y < h; y++) {
+    add[y] = Math.min(h - 1, y + r + 1) * w
+    sub[y] = Math.max(0, y - r) * w
+  }
+  const acc = new Float64Array(w)
+  for (let k = -r; k <= r; k++) {
+    const row = (k < 0 ? 0 : k >= h ? h - 1 : k) * w
+    for (let x = 0; x < w; x++) acc[x]! += src[row + x]!
+  }
+  // Row by row (cache-friendly), carrying one running sum per column.
+  for (let y = 0; y < h; y++) {
+    const row = y * w
+    const plus = add[y]!
+    const minus = sub[y]!
+    for (let x = 0; x < w; x++) {
+      dst[row + x] = acc[x]! * scale
+      acc[x]! += src[plus + x]! - src[minus + x]!
+    }
+  }
+}
+
+/**
+ * Multi-scale ridge ("vesselness") filter, per colour channel, both polarities.
+ *
+ * At each pixel the Hessian (second derivatives of the blurred image) has a large
+ * eigenvalue across a tube and a small one along it. Line-likeness is high when the
+ * small/large ratio is low and the curvature strong (Frangi et al.). Scale-normalised
+ * by σ², so thin wires and wide pipes compete fairly. The response is weighted by how
+ * well the tube's direction agrees with the stroke's.
+ */
+function ridgeMap(
+  data: ArrayLike<number>,
+  width: number,
+  height: number,
+  minX: number,
+  minY: number,
+  bw: number,
+  bh: number,
+  dist: Float32Array,
+  R: number,
+  tangent: Float32Array,
+): Float32Array {
+  const margin = Math.ceil(3 * Math.max(...RIDGE_SCALES)) + 2
+  const ox = Math.max(0, minX - margin)
+  const oy = Math.max(0, minY - margin)
+  const ex = Math.min(width - 1, minX + bw - 1 + margin)
+  const ey = Math.min(height - 1, minY + bh - 1 + margin)
+  const rw = ex - ox + 1
+  const rh = ey - oy + 1
+  const best = new Float32Array(bw * bh)
+  for (let c = 0; c < 3; c++) {
+    const channel = new Float32Array(rw * rh)
+    for (let y = 0; y < rh; y++) {
+      for (let x = 0; x < rw; x++) channel[y * rw + x] = data[((oy + y) * width + ox + x) * 4 + c]! / 255
+    }
+    for (const sigma of RIDGE_SCALES) {
+      const g = gaussianBlur(channel, rw, rh, sigma)
+      const norm = sigma * sigma
+      for (let y = 0; y < bh; y++) {
+        for (let x = 0; x < bw; x++) {
+          const i = y * bw + x
+          if (dist[i]! > R) continue
+          const gx = minX + x - ox
+          const gy = minY + y - oy
+          if (gx < 1 || gy < 1 || gx >= rw - 1 || gy >= rh - 1) continue
+          const o = gy * rw + gx
+          const centre = g[o]!
+          const hxx = (g[o + 1]! - 2 * centre + g[o - 1]!) * norm
+          const hyy = (g[o + rw]! - 2 * centre + g[o - rw]!) * norm
+          const hxy = ((g[o + rw + 1]! - g[o - rw + 1]! - g[o + rw - 1]! + g[o - rw - 1]!) / 4) * norm
+          const root = Math.sqrt((hxx - hyy) * (hxx - hyy) + 4 * hxy * hxy)
+          const l1 = (hxx + hyy + root) / 2
+          const l2 = (hxx + hyy - root) / 2
+          const [small, large] = Math.abs(l1) < Math.abs(l2) ? [l1, l2] : [l2, l1]
+          if (Math.abs(large) < 1e-6) continue
+          const blobness = small / large
+          const strength = Math.abs(large)
+          const lineLike = Math.exp(-(blobness * blobness) / 0.5) * strength
+          // The eigenvector of the large eigenvalue points across the tube.
+          const across = Math.atan2(large - hxx, hxy)
+          const along = across + Math.PI / 2
+          const agree = Math.cos(along - tangent[i]!) ** 2
+          const response = lineLike * (0.3 + 0.7 * agree)
+          if (response > best[i]!) best[i] = response
+        }
+      }
+    }
+  }
+  normaliseInCorridor(best, dist, R)
+  return best
+}
+
+/**
+ * Move each point of a route to the score-weighted centre of the band beneath it,
+ * measured along the route's normal. Corrects routes that hug one edge of a cable.
+ */
+function refineCentreline(
+  points: Pt[],
+  score: Float32Array,
+  dist: Float32Array,
+  R: number,
+  minX: number,
+  minY: number,
+  bw: number,
+  bh: number,
+): Pt[] {
+  const reach = Math.max(2, Math.round(R / 3))
+  const sample = (x: number, y: number) => {
+    const ix = Math.round(x) - minX
+    const iy = Math.round(y) - minY
+    if (ix < 0 || iy < 0 || ix >= bw || iy >= bh) return 0
+    const i = iy * bw + ix
+    return dist[i]! <= R ? score[i]! : 0
+  }
+  return points.map((p, k) => {
+    const a = points[Math.max(0, k - 2)]!
+    const b = points[Math.min(points.length - 1, k + 2)]!
+    const length = Math.hypot(b.x - a.x, b.y - a.y)
+    if (length === 0) return p
+    const nx = -(b.y - a.y) / length
+    const ny = (b.x - a.x) / length
+    const here = sample(p.x, p.y)
+    let weight = 0
+    let offset = 0
+    for (let t = -reach; t <= reach; t += 0.5) {
+      const v = sample(p.x + nx * t, p.y + ny * t)
+      // Only the part of the band at least as strong as half the peak here counts.
+      const w = v >= here * 0.5 ? v * v : 0
+      weight += w
+      offset += w * t
+    }
+    if (weight === 0) return p
+    const shift = Math.max(-reach, Math.min(reach, offset / weight))
+    return { x: p.x + nx * shift, y: p.y + ny * shift }
+  })
+}
+
 /** Cheapest corridor route from start to end (pixel indices in the box), or null. */
 function shortestPath(
   start: number,
@@ -434,16 +766,9 @@ function shortestPath(
   const heap = new MinHeap()
   cost[start] = 0
   heap.push(start, 0)
-  const steps = [
-    [1, 0, 1],
-    [-1, 0, 1],
-    [0, 1, 1],
-    [0, -1, 1],
-    [1, 1, Math.SQRT2],
-    [1, -1, Math.SQRT2],
-    [-1, 1, Math.SQRT2],
-    [-1, -1, Math.SQRT2],
-  ] as const
+  const DX = [1, -1, 0, 0, 1, 1, -1, -1]
+  const DY = [0, 0, 1, -1, 1, -1, 1, -1]
+  const LENGTH = [1, 1, 1, 1, Math.SQRT2, Math.SQRT2, Math.SQRT2, Math.SQRT2]
   while (heap.size) {
     const i = heap.pop()
     if (done[i]) continue
@@ -451,15 +776,16 @@ function shortestPath(
     if (i === end) break
     const x = i % bw
     const y = (i - x) / bw
-    for (const [dx, dy, length] of steps) {
-      const nx = x + dx
-      const ny = y + dy
+    const base = cost[i]!
+    for (let k = 0; k < 8; k++) {
+      const nx = x + DX[k]!
+      const ny = y + DY[k]!
       if (nx < 0 || ny < 0 || nx >= bw || ny >= bh) continue
       const j = ny * bw + nx
       if (done[j] || dist[j]! > R) continue
       const miss = 1 - feature[j]!
       const away = dist[j]! / R
-      const next = cost[i]! + length * (miss * miss + stay * away * away + 0.05)
+      const next = base + LENGTH[k]! * (miss * miss + stay * away * away + 0.05)
       if (next < cost[j]!) {
         cost[j] = next
         previous[j] = i

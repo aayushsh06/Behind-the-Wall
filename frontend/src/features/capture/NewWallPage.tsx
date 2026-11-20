@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { routes } from '@/app/routes'
 import { PageHeader } from '@/components/ui'
@@ -11,6 +11,9 @@ import { useCreateWall } from '@/hooks/useWallMutations'
 
 export function NewWallPage() {
   const navigate = useNavigate()
+  // Opened from a client's page: their email is already known.
+  const [params] = useSearchParams()
+  const homeownerEmail = params.get('homeowner') ?? ''
   const createWall = useCreateWall()
   const knownRooms = useKnownRooms()
   const knownClients = useKnownClients()
@@ -22,7 +25,7 @@ export function NewWallPage() {
     <div className="mx-auto max-w-3xl">
       <PageHeader title="Record a wall" backTo={routes.home()} />
       <WallForm
-        initialDraft={emptyDraft(lastAuthor)}
+        initialDraft={emptyDraft(lastAuthor, homeownerEmail)}
         knownRooms={knownRooms}
         submitLabel="Save wall"
         submitting={createWall.isPending}

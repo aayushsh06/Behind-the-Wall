@@ -9,6 +9,7 @@ import { RequireAuth, TradespersonOnly } from '@/features/auth/RequireAuth'
 import { EditWallPage } from '@/features/capture/EditWallPage'
 import { NewWallPage } from '@/features/capture/NewWallPage'
 import { PhoneOnly } from '@/features/capture/PhoneOnly'
+import { ClientWallsPage } from '@/features/find/ClientWallsPage'
 import { WallDetailPage } from '@/features/find/WallDetailPage'
 import { WallListPage } from '@/features/find/WallListPage'
 import { Landing } from '@/features/marketing/Landing'
@@ -44,6 +45,7 @@ export const router = createBrowserRouter([
         ),
       },
       { path: routePatterns.wall, element: <WallDetailPage /> },
+      { path: routePatterns.client, element: <ClientWallsPage /> },
       {
         path: routePatterns.editWall,
         element: (
