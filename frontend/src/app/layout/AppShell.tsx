@@ -11,7 +11,7 @@ export function AppShell() {
   return (
     <div className="min-h-full">
       <TopBar />
-      <main className="mx-auto w-full max-w-6xl px-4 pt-6 pb-28 sm:px-6 md:pt-8 md:pb-16">
+      <main className="mx-auto w-full max-w-6xl px-4 pt-8 pb-28 sm:px-6 md:pt-12 md:pb-20">
         <Outlet />
       </main>
       <BottomNav />

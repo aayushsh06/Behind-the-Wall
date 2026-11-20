@@ -61,7 +61,7 @@ export function WallDetailPage() {
           src={exportsApi.url(wall.id, 'pdf')}
           // Rebuilt from the latest save; the revision in the key reloads it after an edit.
           key={wall.revision}
-          className="hidden h-[80vh] w-full rounded-lg border border-line bg-surface lg:block"
+          className="hidden h-[80vh] w-full rounded-2xl border border-line bg-surface lg:block"
         />
       ) : null}
 
@@ -110,7 +110,7 @@ export function WallDetailPage() {
           {wall.notes ? (
             <section>
               <SectionHeading>Notes</SectionHeading>
-              <p className="whitespace-pre-wrap rounded-md border border-line bg-surface p-4 text-sm leading-relaxed text-fg-muted">
+              <p className="whitespace-pre-wrap rounded-xl border border-line bg-surface p-4 text-sm leading-relaxed text-fg-muted">
                 {wall.notes}
               </p>
             </section>

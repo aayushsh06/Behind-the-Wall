@@ -73,7 +73,7 @@ export function DetailsStep({ draft, dispatch, knownRooms, destination, onBack, 
             <label className="-mt-1 flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
               <input
                 type="checkbox"
-                className="mt-0.5 size-4 accent-[var(--color-accent)]"
+                className="mt-0.5 size-4 accent-[var(--color-ink)]"
                 checked={draft.inviteHomeowner}
                 onChange={(event) => {
                   dispatch({ type: 'setInvite', invite: event.target.checked })

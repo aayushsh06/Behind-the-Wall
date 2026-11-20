@@ -1,6 +1,6 @@
 """Upload and serve wall photos. See app/api/access.py for who can view a photo."""
 
-from pathlib import Path
+import hashlib
 
 from fastapi import APIRouter, HTTPException, Request, Response, UploadFile, status
 
@@ -74,7 +74,7 @@ def read_photo(
     viewer: ViewerDep,
 ) -> Response:
     photo_or_404(photos, walls, photo_id, user, viewer)
-    return _image_response(request, storage.path_for(photo_id))
+    return _image_response(request, storage.read(photo_id))
 
 
 @router.get("/{photo_id}/thumbnail")
@@ -88,21 +88,19 @@ def read_thumbnail(
     viewer: ViewerDep,
 ) -> Response:
     photo_or_404(photos, walls, photo_id, user, viewer)
-    thumb = storage.thumbnail_path_for(photo_id)
-    return _image_response(request, thumb if thumb.exists() else storage.path_for(photo_id))
+    return _image_response(request, storage.read_thumbnail(photo_id))
 
 
-def _image_response(request: Request, path: Path) -> Response:
+def _image_response(request: Request, data: bytes | None) -> Response:
     """Serve a JPEG with an ETag so browsers revalidate instead of caching a stale image.
 
     Photo bytes can be rewritten under the same id (the sample-home seed does this), so
     the response must not be marked immutable. Revalidation is a cheap 304 round trip.
     """
-    if not path.is_file():
+    if data is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Photo not found")
-    stat = path.stat()
-    etag = f'"{stat.st_size:x}-{stat.st_mtime_ns:x}"'
+    etag = f'"{hashlib.sha1(data, usedforsecurity=False).hexdigest()[:20]}"'
     headers = {"ETag": etag, "Cache-Control": "no-cache"}
     if request.headers.get("if-none-match") == etag:
         return Response(status_code=status.HTTP_304_NOT_MODIFIED, headers=headers)
-    return Response(content=path.read_bytes(), media_type=JPEG_CONTENT_TYPE, headers=headers)
+    return Response(content=data, media_type=JPEG_CONTENT_TYPE, headers=headers)

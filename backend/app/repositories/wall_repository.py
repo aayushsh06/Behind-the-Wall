@@ -50,6 +50,9 @@ class WallRepository:
         wall = self._session.get(Wall, wall_id)
         return wall if wall is not None and viewer.reaches(wall) else None
 
+    def exists(self, wall_id: str) -> bool:
+        return self._session.get(Wall, wall_id) is not None
+
     def photo_visible_to(self, photo_id: str, viewer: Viewer) -> bool:
         """True when the photo is on a wall the account can reach."""
         stmt = select(Wall.id).where(Wall.photo_id == photo_id, _visible_to(viewer)).limit(1)

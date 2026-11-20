@@ -1,7 +1,8 @@
 /** Route path builders so links never hard-code strings. */
 export const routes = {
   home: () => '/',
-  welcome: () => '/welcome',
+  /** The public landing page; open to everyone, signed in or not. */
+  landing: () => '/welcome',
   login: () => '/login',
   register: () => '/register',
   newWall: () => '/walls/new',

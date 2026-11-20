@@ -38,19 +38,9 @@ export function WallListPage() {
 
   return (
     <>
-      <PageHeader
-        title={copy.title}
-        subtitle={copy.subtitle}
-        action={
-          isTrade ? (
-            <Link to={routes.newWall()} className="hidden md:block">
-              <Button>Record a wall</Button>
-            </Link>
-          ) : undefined
-        }
-      />
+      <PageHeader eyebrow={isTrade ? 'Your work' : 'Your home'} title={copy.title} subtitle={copy.subtitle} />
       {isTrade ? null : <PendingAccessNotice />}
-      <div className="mb-6 max-w-md">
+      <div className="mb-10 max-w-md">
         <WallSearch value={query} onChange={setQuery} placeholder={copy.search} />
       </div>
 
@@ -64,7 +54,9 @@ export function WallListPage() {
           action={
             isTrade ? (
               <Link to={routes.newWall()} className="w-full max-w-xs">
-                <Button fullWidth>Record a wall</Button>
+                <Button fullWidth arrow>
+                  Record a wall
+                </Button>
               </Link>
             ) : (
               <p className="text-sm font-medium text-fg">{user.email}</p>
@@ -84,7 +76,7 @@ export function WallListPage() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-12">
           {groups.map((group) => (
             <RoomGroup key={group.room} {...group} />
           ))}
@@ -101,7 +93,7 @@ function PendingAccessNotice() {
   if (pending.length === 0) return null
   const names = pending.map((g) => g.tradesperson.name).join(', ')
   return (
-    <div className="mb-6 flex flex-col gap-3 rounded-md border border-amber-200 border-l-4 border-l-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mb-6 flex flex-col gap-3 rounded-2xl bg-brand-soft px-5 py-4 ring-1 ring-inset ring-amber-200 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
       <p>
         <span className="font-semibold">{names}</span> {pending.length === 1 ? 'is' : 'are'} asking for access to
         correct walls in your home.

@@ -6,18 +6,21 @@ import { AuthLayout } from '@/features/auth/AuthLayout'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RegisterPage } from '@/features/auth/RegisterPage'
 import { RequireAuth, TradespersonOnly } from '@/features/auth/RequireAuth'
-import { WelcomePage } from '@/features/auth/WelcomePage'
 import { EditWallPage } from '@/features/capture/EditWallPage'
 import { NewWallPage } from '@/features/capture/NewWallPage'
+import { PhoneOnly } from '@/features/capture/PhoneOnly'
 import { WallDetailPage } from '@/features/find/WallDetailPage'
 import { WallListPage } from '@/features/find/WallListPage'
+import { Landing } from '@/features/marketing/Landing'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 
 export const router = createBrowserRouter([
+  // Signed-out visitors also get the landing page at "/" (see RequireAuth). Here it is
+  // reachable by everyone, including signed-in users clicking the logo.
+  { path: routePatterns.welcome, element: <Landing /> },
   {
     element: <AuthLayout />,
     children: [
-      { path: routePatterns.welcome, element: <WelcomePage /> },
       { path: routePatterns.login, element: <LoginPage /> },
       { path: routePatterns.register, element: <RegisterPage /> },
     ],
@@ -34,7 +37,9 @@ export const router = createBrowserRouter([
         path: routePatterns.newWall,
         element: (
           <TradespersonOnly>
-            <NewWallPage />
+            <PhoneOnly title="Record a wall">
+              <NewWallPage />
+            </PhoneOnly>
           </TradespersonOnly>
         ),
       },
@@ -43,7 +48,9 @@ export const router = createBrowserRouter([
         path: routePatterns.editWall,
         element: (
           <TradespersonOnly>
-            <EditWallPage />
+            <PhoneOnly title="Edit this wall">
+              <EditWallPage />
+            </PhoneOnly>
           </TradespersonOnly>
         ),
       },

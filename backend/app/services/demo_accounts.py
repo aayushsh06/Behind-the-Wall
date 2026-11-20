@@ -3,7 +3,8 @@
 On startup each missing demo account is created, and existing ones get their name and
 role reset. When the demo homeowner is created it gets the sample home, recorded by the
 demo tradesperson, so both logins show walls straight away: the homeowner reads all
-six, and the tradesperson sees them under that homeowner as a client.
+sample walls, and the tradesperson sees them under that homeowner as a client. Sample
+walls added in later versions are filled in on the next start.
 """
 
 from dataclasses import dataclass
@@ -36,7 +37,9 @@ DEMO_ACCOUNTS: tuple[DemoAccount, ...] = (
 def ensure_demo_accounts(session: Session, settings: Settings) -> list[str]:
     """Create any missing demo accounts. Returns the emails that were created."""
     users = UserRepository(session)
-    seed = SeedService(WallRepository(session), PhotoRepository(session), PhotoStorage(settings))
+    seed = SeedService(
+        WallRepository(session), PhotoRepository(session), PhotoStorage(settings, session)
+    )
     created: list[str] = []
     accounts = {}
     for account in DEMO_ACCOUNTS:
@@ -51,6 +54,9 @@ def ensure_demo_accounts(session: Session, settings: Settings) -> list[str]:
             session.commit()
         accounts[account.role] = user
     homeowner, trade = accounts[Role.HOMEOWNER], accounts[Role.TRADESPERSON]
-    if homeowner.email in created:
-        seed.seed_sample_home(homeowner.id, tradesperson_id=trade.id)
+    # A new demo homeowner gets the whole sample home; an existing one only gets sample
+    # walls added since, so edits made during a demo are kept.
+    seed.seed_sample_home(
+        homeowner.id, tradesperson_id=trade.id, only_missing=homeowner.email not in created
+    )
     return created

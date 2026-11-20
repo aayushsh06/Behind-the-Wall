@@ -1,0 +1,13 @@
+.git
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+backend/data
+backend/tests
+backend/.env
+frontend/dist
+docs
+*.log
+.DS_Store

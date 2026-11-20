@@ -5,12 +5,13 @@ import { routes } from '@/app/routes'
 import { ErrorMessage, Spinner } from '@/components/ui'
 import { useCurrentUser } from '@/hooks/useAuth'
 
-/** Where to return after signing in. Passed along as router state. */
-export interface ReturnState {
-  from?: string
-}
+import type { ReturnState } from '@/features/auth/PublicOnly'
+import { Landing } from '@/features/marketing/Landing'
 
-/** Signed-in screens only. Anyone else goes to the welcome page. */
+/**
+ * Signed-in screens only. A signed-out visitor sees the landing page at "/", and is sent
+ * there from any other signed-in address (remembering it, to return after signing in).
+ */
 export function RequireAuth({ children }: { children: ReactNode }) {
   const location = useLocation()
   const user = useCurrentUser()
@@ -24,8 +25,9 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     )
   }
   if (!user.data) {
+    if (location.pathname === routes.home()) return <Landing />
     const state: ReturnState = { from: location.pathname + location.search }
-    return <Navigate to={routes.welcome()} replace state={state} />
+    return <Navigate to={routes.home()} replace state={state} />
   }
   return children
 }
@@ -34,21 +36,5 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 export function TradespersonOnly({ children }: { children: ReactNode }) {
   const user = useCurrentUser()
   if (user.data?.role !== 'tradesperson') return <Navigate to={routes.home()} replace />
-  return children
-}
-
-/**
- * Welcome, sign-in and create-account screens. Once signed in (including right after
- * signing in here) the user goes back to the page that sent them, or to their walls.
- */
-export function PublicOnly({ children }: { children: ReactNode }) {
-  const user = useCurrentUser()
-  const state = useLocation().state as ReturnState | null
-
-  if (user.isPending) return <Spinner label="Checking sign-in" />
-  if (user.data) {
-    const target = state?.from?.startsWith('/') ? state.from : routes.home()
-    return <Navigate to={target} replace />
-  }
   return children
 }

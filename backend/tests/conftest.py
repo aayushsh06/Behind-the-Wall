@@ -1,6 +1,7 @@
 """Test fixtures: each session gets a fresh SQLite database and photo directory."""
 
 import os
+import sys
 from collections.abc import Callable, Iterator
 from io import BytesIO
 from pathlib import Path
@@ -12,6 +13,15 @@ from PIL import Image
 
 @pytest.fixture(scope="session")
 def data_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    # The engine is created when app.core.database is first imported. If a test module
+    # imported app code at the top, it would already point at the real backend/data
+    # database; refuse to run rather than write test accounts into it.
+    if "app.core.database" in sys.modules:
+        pytest.exit(
+            "app.core.database was imported before the test data directory was set. "
+            "Import app modules inside test functions, not at the top of test files.",
+            returncode=2,
+        )
     path = tmp_path_factory.mktemp("btw-data")
     os.environ["BTW_DATA_DIR"] = str(path)
     # Tests create the accounts they need; the demo logins are covered in test_auth.py.

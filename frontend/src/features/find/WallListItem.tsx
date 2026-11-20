@@ -2,8 +2,7 @@ import { Link } from 'react-router-dom'
 
 import { photosApi } from '@/api/photos'
 import { routes } from '@/app/routes'
-import { Chip } from '@/components/ui'
-import { COVERAGE_META } from '@/domain/coverage'
+import { Arrow } from '@/components/ui'
 import type { WallSummary } from '@/domain/types'
 import { formatDate } from '@/lib/format'
 
@@ -11,47 +10,40 @@ interface WallListItemProps {
   wall: WallSummary
 }
 
+/** Photo-first card: the wall itself is the most recognisable thing about a record. */
 export function WallListItem({ wall }: WallListItemProps) {
-  const coverage = COVERAGE_META[wall.coverage]
   return (
     <li className="min-w-0">
       <Link
         to={routes.wall(wall.id)}
-        className="group flex h-full items-center gap-3.5 rounded-lg border border-line bg-surface p-3 shadow-card transition-colors hover:border-line-strong hover:bg-surface-2/50"
+        className="group flex h-full flex-col overflow-hidden rounded-2xl bg-surface ring-1 ring-inset ring-line transition-shadow hover:shadow-lift"
       >
-        <div className="size-[68px] shrink-0 overflow-hidden rounded bg-surface-2 ring-1 ring-line">
+        <div className="relative aspect-[16/10] overflow-hidden bg-surface-2">
           {wall.photo_id ? (
             <img
               src={photosApi.thumbnailUrl(wall.photo_id, wall.updated_at)}
               alt=""
               loading="lazy"
-              className="size-full object-cover"
+              className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             />
           ) : (
-            <div className="flex size-full items-center justify-center text-[11px] text-fg-faint">No photo</div>
+            <div className="relative flex size-full items-center justify-center">
+              <span aria-hidden="true" className="hatch absolute inset-0 opacity-50" />
+              <span className="eyebrow relative rounded bg-surface px-2 py-1 text-fg-muted">No photo</span>
+            </div>
           )}
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] font-semibold">{wall.label}</p>
-          <p className="truncate text-[13px] text-fg-muted">
-            {wall.marker_count} {wall.marker_count === 1 ? 'item' : 'items'} · {wall.author}
-          </p>
-          <p className="mt-0.5 text-xs text-fg-faint">{formatDate(wall.observed_date)}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Chip tone={coverage.tone}>{coverage.label}</Chip>
-          <svg
-            aria-hidden="true"
-            className="text-fg-faint transition-colors group-hover:text-fg-muted"
-            width="16"
-            height="16"
-            viewBox="0 0 20 20"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M8 4l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+        <div className="flex flex-1 items-end justify-between gap-3 p-4">
+          <div className="min-w-0">
+            <p className="truncate text-[15px] font-semibold tracking-tight">{wall.label}</p>
+            <p className="mt-0.5 truncate text-[13px] text-fg-muted">
+              {wall.marker_count} {wall.marker_count === 1 ? 'item' : 'items'} · {wall.author}
+            </p>
+            <p className="eyebrow mt-2 text-fg-faint">{formatDate(wall.observed_date)}</p>
+          </div>
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-fg transition-colors group-hover:bg-ink group-hover:text-white">
+            <Arrow />
+          </span>
         </div>
       </Link>
     </li>

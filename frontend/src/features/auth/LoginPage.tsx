@@ -26,7 +26,7 @@ export function LoginPage() {
 
   return (
     <AuthCard>
-      <PageHeader title="Sign in" backTo={routes.welcome()} />
+      <PageHeader title="Sign in" backTo={routes.home()} />
 
       <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
         <TextField
@@ -52,7 +52,7 @@ export function LoginPage() {
 
       <p className="mt-5 text-center text-sm text-fg-muted">
         Don’t have an account?{' '}
-        <Link to={routes.register()} state={state} className="font-medium text-accent hover:underline">
+        <Link to={routes.register()} state={state} className="font-semibold text-fg underline decoration-brand decoration-2 underline-offset-4 hover:decoration-ink">
           Create an account
         </Link>
       </p>
