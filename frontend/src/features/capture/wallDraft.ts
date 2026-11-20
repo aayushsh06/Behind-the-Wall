@@ -113,8 +113,8 @@ export type DraftAction =
   | { type: 'setCalibration'; calibration: WallCalibration | null }
   | { type: 'moveCalibrationCorner'; corner: CalibrationCorner; point: Point }
   | { type: 'setCalibrationSize'; changes: Partial<Pick<WallCalibration, 'width' | 'height'>> & { unit?: LengthUnit } }
-  | { type: 'addMarker'; point: Point }
-  | { type: 'addLineMarker'; start: Point; end: Point }
+  | { type: 'addMarker'; point: Point; utility: UtilityType }
+  | { type: 'addPathMarker'; points: Point[]; utility: UtilityType }
   | { type: 'updateMarker'; id: string; changes: Partial<Omit<Marker, 'id'>> }
   | { type: 'moveMarker'; id: string; point: Point }
   | { type: 'translateMarker'; id: string; dx: number; dy: number }
@@ -129,12 +129,30 @@ const newMarkerId = () =>
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n))
 
-function newMarker(fields: Pick<Marker, 'kind' | 'x' | 'y' | 'x2' | 'y2'>): Marker {
-  return { id: newMarkerId(), type: DEFAULT_MARKER_TYPE, measurement: '', reference_point: '', note: '', ...fields }
+function newMarker(fields: Pick<Marker, 'kind' | 'x' | 'y' | 'x2' | 'y2'> & Partial<Pick<Marker, 'type' | 'points'>>): Marker {
+  return {
+    id: newMarkerId(),
+    type: DEFAULT_MARKER_TYPE,
+    points: null,
+    measurement: '',
+    reference_point: '',
+    note: '',
+    ...fields,
+  }
 }
 
-/** Shift both endpoints of a line, stopping at the photo edge so the line keeps its length. */
+/** Shift a run, stopping at the photo edge so it keeps its shape. */
 function translateLine(marker: Marker, dx: number, dy: number): Marker {
+  if (marker.kind === 'path' && marker.points) {
+    const xs = marker.points.map((p) => p.x)
+    const ys = marker.points.map((p) => p.y)
+    const safeDx = Math.min(Math.max(dx, -Math.min(...xs)), 1 - Math.max(...xs))
+    const safeDy = Math.min(Math.max(dy, -Math.min(...ys)), 1 - Math.max(...ys))
+    const points = marker.points.map((p) => ({ x: p.x + safeDx, y: p.y + safeDy }))
+    const first = points[0]!
+    const last = points[points.length - 1]!
+    return { ...marker, points, x: first.x, y: first.y, x2: last.x, y2: last.y }
+  }
   if (marker.x2 === null || marker.y2 === null) return marker
   const minX = Math.min(marker.x, marker.x2)
   const maxX = Math.max(marker.x, marker.x2)
@@ -196,18 +214,33 @@ export function draftReducer(draft: WallDraft, action: DraftAction): WallDraft {
       return { ...draft, calibration: { ...current, ...action.changes } }
     }
     case 'addMarker': {
-      const marker = newMarker({ kind: 'point', x: action.point.x, y: action.point.y, x2: null, y2: null })
-      return { ...draft, markers: [...draft.markers, marker], selectedMarkerId: marker.id }
-    }
-    case 'addLineMarker': {
       const marker = newMarker({
-        kind: 'line',
-        x: action.start.x,
-        y: action.start.y,
-        x2: action.end.x,
-        y2: action.end.y,
+        kind: 'point',
+        type: action.utility,
+        x: action.point.x,
+        y: action.point.y,
+        x2: null,
+        y2: null,
       })
       return { ...draft, markers: [...draft.markers, marker], selectedMarkerId: marker.id }
+    }
+    case 'addPathMarker': {
+      if (action.points.length < 2) return draft
+      const points = action.points.map((p) => ({ x: clamp01(p.x), y: clamp01(p.y) }))
+      const first = points[0]!
+      const last = points[points.length - 1]!
+      const marker = newMarker({
+        kind: 'path',
+        type: action.utility,
+        points,
+        x: first.x,
+        y: first.y,
+        x2: last.x,
+        y2: last.y,
+      })
+      // Not selected, so the details sheet doesn't cover the photo: the tradesperson
+      // first sees where the run snapped, then taps its number to add details.
+      return { ...draft, markers: [...draft.markers, marker], selectedMarkerId: null }
     }
     case 'updateMarker':
       return {

@@ -1,15 +1,19 @@
 import { useState } from 'react'
 
 import type { Point } from '@/components/photo'
-import { PhotoCanvas } from '@/components/photo'
+import { PhotoCanvas, ZoomViewport } from '@/components/photo'
 import { BottomSheet, Button, ErrorMessage, InfoBox, TextField } from '@/components/ui'
 import { isCalibrationValid, markerPosition } from '@/domain/geometry'
-import type { MarkerKind } from '@/domain/types'
+import type { UtilityType } from '@/domain/types'
+import { UTILITY_META } from '@/domain/utility'
 import { MarkerForm } from '@/features/capture/MarkerForm'
-import { PlacementModeToggle } from '@/features/capture/PlacementModeToggle'
+import type { MarkerTool } from '@/features/capture/MarkerToolbar'
+import { MarkerToolbar } from '@/features/capture/MarkerToolbar'
+import { smoothStroke, snapStroke } from '@/features/capture/snapPath'
 import { incompleteMarkerIds } from '@/features/capture/validation'
 import type { DraftAction, WallDraft } from '@/features/capture/wallDraft'
 import { MarkerList } from '@/features/find/MarkerList'
+import { loadPixels } from '@/lib/imagePixels'
 
 interface MarkersStepProps {
   draft: WallDraft
@@ -21,66 +25,131 @@ interface MarkersStepProps {
   onSubmit: () => void
 }
 
-export function MarkersStep({ draft, dispatch, submitting, submitError, submitLabel, onBack, onSubmit }: MarkersStepProps) {
-  const [mode, setMode] = useState<MarkerKind>('point')
-  const [pendingStart, setPendingStart] = useState<Point | null>(null)
+type DrawStatus = { state: 'snapping' } | { state: 'snapped' | 'kept'; label: string } | null
 
+/** Smooth a stroke given in normalized coordinates (smoothing works in pixel units). */
+function smoothNormalized(points: Point[]): Point[] {
+  const SCALE = 1000
+  return smoothStroke(points.map((p) => ({ x: p.x * SCALE, y: p.y * SCALE }))).map((p) => ({
+    x: p.x / SCALE,
+    y: p.y / SCALE,
+  }))
+}
+
+export function MarkersStep({ draft, dispatch, submitting, submitError, submitLabel, onBack, onSubmit }: MarkersStepProps) {
+  const [utility, setUtility] = useState<UtilityType>('wire')
+  const [tool, setTool] = useState<MarkerTool>('draw')
+  const [snap, setSnap] = useState(true)
+  const [status, setStatus] = useState<DrawStatus>(null)
+
+  const photo = draft.photo
   const selected = draft.markers.find((m) => m.id === draft.selectedMarkerId) ?? null
   const incomplete = incompleteMarkerIds(draft)
   const canPlace = draft.photo !== null && draft.coverage !== 'none'
   const calibration = isCalibrationValid(draft.calibration) ? draft.calibration : null
+  const label = UTILITY_META[utility].label.toLowerCase()
+  const lastMarker = draft.markers[draft.markers.length - 1]
 
-  const handlePlace = (point: Point) => {
-    if (mode === 'point') {
-      dispatch({ type: 'addMarker', point })
-      return
+  /**
+   * Snap a finished stroke to the photo (or just smooth it) and add it as a run.
+   * Zoomed in, the photo is analysed at full resolution so closely spaced cables stay
+   * distinct. The corridor stays the same share of the photo: zooming already makes the
+   * trace more precise, and a narrower corridor measured worse on real photos.
+   */
+  const handleDrawComplete = async (stroke: Point[], zoom: number) => {
+    const photo = draft.photo
+    if (!photo) return
+    const runLabel = label
+    let points = smoothNormalized(stroke)
+    let outcome: 'snapped' | 'kept' = 'kept'
+    if (snap) {
+      setStatus({ state: 'snapping' })
+      try {
+        const image = await loadPixels(photo.url, zoom > 1.25 ? 1600 : 900)
+        const corridor = Math.max(10, Math.round(0.035 * Math.max(image.width, image.height)))
+        const result = snapStroke(
+          image,
+          stroke.map((p) => ({ x: p.x * image.width, y: p.y * image.height })),
+          { corridor },
+        )
+        points = result.points.map((p) => ({ x: p.x / image.width, y: p.y / image.height }))
+        outcome = result.snapped ? 'snapped' : 'kept'
+      } catch {
+        outcome = 'kept'
+      }
     }
-    if (!pendingStart) {
-      setPendingStart(point)
-      return
-    }
-    dispatch({ type: 'addLineMarker', start: pendingStart, end: point })
-    setPendingStart(null)
-  }
-
-  const changeMode = (next: MarkerKind) => {
-    setMode(next)
-    setPendingStart(null)
+    dispatch({ type: 'addPathMarker', points, utility })
+    setStatus({ state: outcome, label: runLabel })
   }
 
   const instructions =
-    mode === 'line'
-      ? pendingStart
-        ? 'Now tap where the run ends.'
-        : 'Tap where the run starts, then where it ends. Drag the badge to move it or the ends to adjust.'
-      : 'Tap the photo where each item is. Drag a pin to adjust.'
+    tool === 'draw'
+      ? `Trace the ${label} with your finger.${snap ? ` When you lift, it snaps to the ${label} in the photo.` : ''} Pinch with two fingers to zoom in where cables run close together.`
+      : `Tap the photo where each ${label} item is, like a box or valve. Drag a pin to adjust; pinch to zoom.`
 
   return (
     <div className="flex flex-col gap-4">
-      {canPlace && draft.photo ? (
+      {canPlace && photo ? (
         <>
-          <PlacementModeToggle value={mode} onChange={changeMode} />
-          <p className="text-sm leading-relaxed text-fg-muted">{instructions}</p>
-          <PhotoCanvas
-            src={draft.photo.url}
-            alt="Wall"
-            aspectRatio={draft.photo.width / draft.photo.height}
-            markers={draft.markers}
-            uncoveredRegion={draft.uncoveredRegion}
-            calibration={calibration}
-            selectedMarkerId={draft.selectedMarkerId}
-            pendingLineStart={pendingStart}
-            editable
-            onPlace={handlePlace}
-            onSelectMarker={(id) => dispatch({ type: 'selectMarker', id })}
-            onMoveMarker={(id, point) => dispatch({ type: 'moveMarker', id, point })}
-            onTranslateMarker={(id, dx, dy) => dispatch({ type: 'translateMarker', id, dx, dy })}
-            onMoveMarkerEndpoint={(id, endpoint, point) => dispatch({ type: 'moveMarkerEndpoint', id, endpoint, point })}
+          <MarkerToolbar
+            utility={utility}
+            onUtilityChange={setUtility}
+            tool={tool}
+            onToolChange={(next) => {
+              setTool(next)
+              setStatus(null)
+            }}
+            snap={snap}
+            onSnapChange={setSnap}
           />
-          {pendingStart ? (
-            <Button variant="ghost" onClick={() => setPendingStart(null)}>
-              Cancel this line
-            </Button>
+          <p className="text-sm leading-relaxed text-fg-muted">{instructions}</p>
+          <ZoomViewport drawing={tool === 'draw'}>
+            {({ zoom, pinching }) => (
+              <PhotoCanvas
+                src={photo.url}
+                alt="Wall"
+                aspectRatio={photo.width / photo.height}
+                markers={draft.markers}
+                uncoveredRegion={draft.uncoveredRegion}
+                calibration={calibration}
+                selectedMarkerId={draft.selectedMarkerId}
+                editable
+                gestureActive={pinching}
+                drawColor={tool === 'draw' ? UTILITY_META[utility].hex : null}
+                onDrawComplete={(stroke) => void handleDrawComplete(stroke, zoom)}
+                onPlace={tool === 'point' ? (point) => dispatch({ type: 'addMarker', point, utility }) : undefined}
+                onSelectMarker={(id) => dispatch({ type: 'selectMarker', id })}
+                onMoveMarker={(id, point) => dispatch({ type: 'moveMarker', id, point })}
+                onTranslateMarker={(id, dx, dy) => dispatch({ type: 'translateMarker', id, dx, dy })}
+                onMoveMarkerEndpoint={(id, endpoint, point) => dispatch({ type: 'moveMarkerEndpoint', id, endpoint, point })}
+              />
+            )}
+          </ZoomViewport>
+          {status ? (
+            <div
+              role="status"
+              className="flex items-center justify-between gap-3 rounded-2xl bg-surface-2 px-4 py-3 text-sm"
+            >
+              <span>
+                {status.state === 'snapping'
+                  ? 'Snapping to the photo…'
+                  : status.state === 'snapped'
+                    ? `Snapped to the ${status.label} in the photo. Tap its number to add details.`
+                    : `Kept as drawn${snap ? ' (nothing clear to snap to)' : ''}. Tap its number to add details.`}
+              </span>
+              {status.state !== 'snapping' && lastMarker?.kind === 'path' ? (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    dispatch({ type: 'removeMarker', id: lastMarker.id })
+                    setStatus(null)
+                  }}
+                >
+                  Undo
+                </Button>
+              ) : null}
+            </div>
           ) : null}
           <MarkerList
             markers={draft.markers}

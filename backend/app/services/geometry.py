@@ -96,10 +96,38 @@ def describe_line(line: PhysicalLine) -> str:
     return f"{length} long, from ({describe_point(line.start)}) to ({describe_point(line.end)})"
 
 
+def physical_path_length(points, calibration: WallCalibration) -> float:
+    """Length along a freehand path in the wall's real units."""
+    real = [physical_point(p.x, p.y, calibration) for p in points]
+    return sum(
+        hypot(b.from_left - a.from_left, b.from_floor - a.from_floor)
+        for a, b in zip(real, real[1:], strict=False)
+    )
+
+
+def path_midpoint(points) -> tuple[float, float]:
+    """The point halfway along a path (normalized photo coordinates), for its badge."""
+    lengths = [hypot(b.x - a.x, b.y - a.y) for a, b in zip(points, points[1:], strict=False)]
+    half = sum(lengths) / 2
+    for (a, b), length in zip(zip(points, points[1:], strict=False), lengths, strict=False):
+        if half <= length and length > 0:
+            t = half / length
+            return a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t
+        half -= length
+    return points[-1].x, points[-1].y
+
+
 def describe_marker(marker: Marker, calibration: WallCalibration | None) -> str | None:
     """Human-readable computed position, or None when the wall is not calibrated."""
     if calibration is None:
         return None
+    if marker.kind is MarkerKind.PATH and marker.points:
+        first, last = marker.points[0], marker.points[-1]
+        ends = physical_line(first.x, first.y, last.x, last.y, calibration)
+        length = physical_path_length(marker.points, calibration)
+        return describe_line(
+            PhysicalLine(start=ends.start, end=ends.end, length=length, unit=calibration.unit)
+        )
     if marker.kind is MarkerKind.LINE and marker.x2 is not None and marker.y2 is not None:
         return describe_line(physical_line(marker.x, marker.y, marker.x2, marker.y2, calibration))
     return describe_point(physical_point(marker.x, marker.y, calibration))

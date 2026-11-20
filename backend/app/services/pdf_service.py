@@ -29,7 +29,7 @@ from reportlab.platypus import (
 from app.models import Photo, Wall
 from app.schemas import MarkerKind, WallRead
 from app.services.export_service import UTILITY_COLORS, UTILITY_LABELS, ExportBundle, ExportService
-from app.services.geometry import describe_marker, describe_wall_size
+from app.services.geometry import describe_marker, describe_wall_size, path_midpoint
 
 INK = colors.HexColor("#1b2330")
 MUTED = colors.HexColor("#4a5462")
@@ -67,6 +67,13 @@ class _Pin:
     y: float
     x2: float | None = None
     y2: float | None = None
+    path: tuple[tuple[float, float], ...] | None = None
+
+
+@dataclass(frozen=True)
+class _XY:
+    x: float
+    y: float
 
 
 class AnnotatedPhoto(Flowable):
@@ -131,10 +138,21 @@ class AnnotatedPhoto(Flowable):
             c.restoreState()
 
         pins = [
-            _Pin(i + 1, UTILITY_COLORS[m.type.value], m.x, m.y, m.x2, m.y2)
+            _Pin(
+                i + 1,
+                UTILITY_COLORS[m.type.value],
+                m.x,
+                m.y,
+                m.x2,
+                m.y2,
+                tuple((p.x, p.y) for p in m.points) if m.points else None,
+            )
             for i, m in enumerate(record.markers)
         ]
         for pin in pins:
+            if pin.path:
+                self._polyline(pin.path, pin.color)
+                continue
             if pin.x2 is None or pin.y2 is None:
                 continue
             a, b = self._pt(pin.x, pin.y), self._pt(pin.x2, pin.y2)
@@ -146,7 +164,10 @@ class AnnotatedPhoto(Flowable):
             c.setLineWidth(3)
             c.line(*a, *b)
         for pin in pins:
-            if pin.x2 is not None and pin.y2 is not None:
+            if pin.path:
+                mx, my = path_midpoint([_XY(x, y) for x, y in pin.path])
+                px, py = self._pt(mx, my)
+            elif pin.x2 is not None and pin.y2 is not None:
                 px, py = self._pt((pin.x + pin.x2) / 2, (pin.y + pin.y2) / 2)
             else:
                 px, py = self._pt(pin.x, pin.y)
@@ -157,6 +178,19 @@ class AnnotatedPhoto(Flowable):
             c.setFillColor(colors.white)
             c.setFont("Helvetica-Bold", 8)
             c.drawCentredString(px, py - 2.8, str(pin.index))
+
+    def _polyline(self, path: tuple[tuple[float, float], ...], color: str) -> None:
+        c = self.canv
+        for stroke, width in ((colors.white, 5), (colors.HexColor(color), 3)):
+            line = c.beginPath()
+            line.moveTo(*self._pt(*path[0]))
+            for x, y in path[1:]:
+                line.lineTo(*self._pt(x, y))
+            c.setLineCap(1)
+            c.setLineJoin(1)
+            c.setStrokeColor(stroke)
+            c.setLineWidth(width)
+            c.drawPath(line, stroke=1, fill=0)
 
 
 class PdfService:
@@ -340,7 +374,8 @@ class PdfService:
         head = ["#", "Type", "Position", "Measurement", "Measured from", "Note"]
         rows = [[Paragraph(h, self._cell_head) for h in head]]
         for i, m in enumerate(record.markers):
-            kind = UTILITY_LABELS[m.type.value] + (" run" if m.kind is MarkerKind.LINE else "")
+            is_run = m.kind in (MarkerKind.LINE, MarkerKind.PATH)
+            kind = UTILITY_LABELS[m.type.value] + (" run" if is_run else "")
             position = describe_marker(m, record.calibration) or "—"
             rows.append(
                 [

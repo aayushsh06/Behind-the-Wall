@@ -70,7 +70,13 @@
           <rect class="wall-outline" x="{{ c.top_left.x * 100 }}" y="{{ c.top_left.y * 100 * aspect }}" width="{{ (c.bottom_right.x - c.top_left.x) * 100 }}" height="{{ (c.bottom_right.y - c.top_left.y) * 100 * aspect }}"/>
         {% endif %}
         {% for m in markers %}
-          {% if m.is_line %}
+          {% if m.is_path %}
+            <polyline class="seg-halo" fill="none" stroke-linejoin="round" points="{{ m.svg_points }}"/>
+            <polyline class="seg" fill="none" stroke-linejoin="round" stroke="{{ utility_colors[m.type] }}" points="{{ m.svg_points }}"/>
+            {% set mx = m.mid[0] %}{% set my = m.mid[1] %}
+            <circle class="pin-{{ m.type }}" cx="{{ mx * 100 }}" cy="{{ my * 100 * aspect }}" r="2.6" stroke="#fff" stroke-width="0.4"/>
+            <text class="pin" x="{{ mx * 100 }}" y="{{ my * 100 * aspect }}">{{ m.index }}</text>
+          {% elif m.is_line %}
             <line class="seg-halo" x1="{{ m.x * 100 }}" y1="{{ m.y * 100 * aspect }}" x2="{{ m.x2 * 100 }}" y2="{{ m.y2 * 100 * aspect }}"/>
             <line class="seg" stroke="{{ utility_colors[m.type] }}" x1="{{ m.x * 100 }}" y1="{{ m.y * 100 * aspect }}" x2="{{ m.x2 * 100 }}" y2="{{ m.y2 * 100 * aspect }}"/>
             {% set mx = (m.x + m.x2) / 2 %}{% set my = (m.y + m.y2) / 2 %}

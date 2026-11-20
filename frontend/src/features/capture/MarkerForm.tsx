@@ -31,7 +31,7 @@ export function MarkerForm({ marker, position, onChange, onDelete, onDone }: Mar
       {position ? (
         <div className="rounded-md border border-line bg-surface-2 px-3.5 py-2.5 text-sm">
           <p className="text-xs font-medium text-fg-faint">
-            {marker.kind === 'line' ? 'Computed run' : 'Computed position'}
+            {marker.kind === 'point' ? 'Computed position' : 'Computed run'}
           </p>
           {position.length ? <p className="mt-1 font-semibold">{position.length} long</p> : null}
           <p className="text-fg-muted">{position.summary}</p>
@@ -40,7 +40,7 @@ export function MarkerForm({ marker, position, onChange, onDelete, onDone }: Mar
 
       <TextField
         label={measurementRequired ? 'Measurement' : 'Measurement (optional)'}
-        placeholder={marker.kind === 'line' ? '1/2 in copper, runs to ceiling' : '18 in above floor'}
+        placeholder={marker.kind === 'point' ? '18 in above floor' : '1/2 in copper, runs to ceiling'}
         autoFocus
         value={marker.measurement}
         onChange={(event) => onChange({ measurement: event.target.value })}

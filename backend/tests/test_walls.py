@@ -102,3 +102,63 @@ def test_calibration_dropped_without_photo(client: TestClient) -> None:
     }
     wall = client.post("/api/walls", json=wall_payload(None, calibration=calibration)).json()
     assert wall["calibration"] is None
+
+
+def _path_payload(photo_id: str) -> dict:
+    calibration = {
+        "top_left": {"x": 0.0, "y": 0.0},
+        "bottom_right": {"x": 1.0, "y": 1.0},
+        "width": 100,
+        "height": 100,
+        "unit": "in",
+    }
+    # An L-shaped run: 50 in across, then 40 in down (90 in along the path).
+    points = [{"x": 0.1, "y": 0.2}, {"x": 0.6, "y": 0.2}, {"x": 0.6, "y": 0.6}]
+    return wall_payload(
+        photo_id,
+        calibration=calibration,
+        markers=[
+            {
+                "type": "wire",
+                "kind": "path",
+                "x": 0,
+                "y": 0,
+                "points": points,
+                "measurement": "",
+                "reference_point": "",
+            }
+        ],
+    )
+
+
+def test_freehand_path_round_trips_and_syncs_endpoints(
+    client: TestClient, uploaded_photo: dict
+) -> None:
+    created = client.post("/api/walls", json=_path_payload(uploaded_photo["id"]))
+    assert created.status_code == 201, created.text
+    marker = created.json()["markers"][0]
+    assert marker["kind"] == "path"
+    assert len(marker["points"]) == 3
+    # First and last points double as the endpoints for line-only readers.
+    assert (marker["x"], marker["y"], marker["x2"], marker["y2"]) == (0.1, 0.2, 0.6, 0.6)
+
+    wall_id = created.json()["id"]
+    html = client.get(f"/api/walls/{wall_id}/export.html").text
+    assert "<polyline" in html
+    # Length is measured along the path, not straight between the ends (64 in).
+    assert "7 ft 6 in long" in html
+    pdf = client.get(f"/api/walls/{wall_id}/export.pdf")
+    assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
+
+
+def test_path_needs_two_points_and_points_only_on_paths(
+    client: TestClient, uploaded_photo: dict
+) -> None:
+    one_point = _path_payload(uploaded_photo["id"])
+    one_point["markers"][0]["points"] = [{"x": 0.1, "y": 0.1}]
+    assert client.post("/api/walls", json=one_point).status_code == 422
+
+    point_with_points = wall_payload(uploaded_photo["id"])
+    point_with_points["markers"][0]["points"] = [{"x": 0.1, "y": 0.1}, {"x": 0.2, "y": 0.2}]
+    saved = client.post("/api/walls", json=point_with_points).json()
+    assert saved["markers"][0]["points"] is None

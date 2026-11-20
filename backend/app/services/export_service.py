@@ -14,7 +14,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from app.models import Photo, Wall
 from app.schemas import MarkerKind, WallRead
-from app.services.geometry import describe_marker, describe_wall_size
+from app.services.geometry import describe_marker, describe_wall_size, path_midpoint
 from app.services.photo_storage import JPEG_CONTENT_TYPE
 
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
@@ -60,6 +60,7 @@ class ExportService:
     def to_html(self, wall: Wall, photo: Photo | None, photo_bytes: bytes | None) -> ExportBundle:
         record = WallRead.model_validate(wall)
         template = self._env.get_template("wall_export.html")
+        aspect = photo.height / photo.width if photo else 1.0
         html = template.render(
             wall=record,
             photo=photo,
@@ -73,7 +74,12 @@ class ExportService:
                 | {
                     "index": i + 1,
                     "type_label": UTILITY_LABELS[m.type.value],
-                    "is_line": m.kind is MarkerKind.LINE,
+                    "is_line": m.kind in (MarkerKind.LINE, MarkerKind.PATH),
+                    "is_path": m.kind is MarkerKind.PATH,
+                    "mid": self._midpoint(m),
+                    "svg_points": " ".join(
+                        f"{p.x * 100:.3f},{p.y * 100 * aspect:.3f}" for p in (m.points or [])
+                    ),
                     "position": describe_marker(m, record.calibration),
                 }
                 for i, m in enumerate(record.markers)
@@ -107,6 +113,14 @@ class ExportService:
             content=json.dumps(payload, indent=2).encode("utf-8"),
             media_type="application/json",
         )
+
+    @staticmethod
+    def _midpoint(marker) -> tuple[float, float]:
+        if marker.kind is MarkerKind.PATH and marker.points:
+            return path_midpoint(marker.points)
+        if marker.x2 is not None and marker.y2 is not None:
+            return (marker.x + marker.x2) / 2, (marker.y + marker.y2) / 2
+        return marker.x, marker.y
 
     @staticmethod
     def _data_uri(photo_bytes: bytes | None) -> str | None:

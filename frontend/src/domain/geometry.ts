@@ -86,11 +86,35 @@ export interface MarkerPosition {
   length?: string
 }
 
-type MarkerGeometry = Pick<Marker, 'kind' | 'x' | 'y' | 'x2' | 'y2'>
+type MarkerGeometry = Pick<Marker, 'kind' | 'x' | 'y' | 'x2' | 'y2'> & { points?: Point[] | null }
+
+/** The point halfway along a path, where its numbered badge sits. */
+export function pathMidpoint(points: Point[]): Point {
+  const lengths = points.slice(1).map((p, i) => Math.hypot(p.x - points[i]!.x, p.y - points[i]!.y))
+  let half = lengths.reduce((sum, l) => sum + l, 0) / 2
+  for (let i = 0; i < lengths.length; i++) {
+    const length = lengths[i]!
+    if (half <= length && length > 0) {
+      const a = points[i]!
+      const b = points[i + 1]!
+      return { x: a.x + ((b.x - a.x) * half) / length, y: a.y + ((b.y - a.y) * half) / length }
+    }
+    half -= length
+  }
+  return points[points.length - 1] ?? { x: 0, y: 0 }
+}
 
 /** Computed position for a marker, or null when the wall is not calibrated. */
 export function markerPosition(marker: MarkerGeometry, calibration: WallCalibration | null): MarkerPosition | null {
   if (!calibration) return null
+  if (marker.kind === 'path' && marker.points && marker.points.length >= 2) {
+    const points = marker.points
+    const real = points.map((p) => physicalPoint(p, calibration))
+    const length = real.slice(1).reduce((sum, p, i) => sum + Math.hypot(p.fromLeft - real[i]!.fromLeft, p.fromFloor - real[i]!.fromFloor), 0)
+    const ends = physicalLine(points[0]!, points[points.length - 1]!, calibration)
+    const line = { ...ends, length }
+    return { summary: describeLine(line), length: formatLength(length, line.unit) }
+  }
   if (marker.kind === 'line' && marker.x2 !== null && marker.y2 !== null) {
     const line = physicalLine({ x: marker.x, y: marker.y }, { x: marker.x2, y: marker.y2 }, calibration)
     return { summary: describeLine(line), length: formatLength(line.length, line.unit) }

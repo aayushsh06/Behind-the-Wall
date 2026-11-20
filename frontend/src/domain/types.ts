@@ -35,8 +35,9 @@ export interface WallCalibration {
   unit: LengthUnit
 }
 
-export type MarkerKind = 'point' | 'line'
-export const MARKER_KINDS: readonly MarkerKind[] = ['point', 'line']
+/** point: a single spot. line: a straight run. path: a freehand run snapped to the photo. */
+export type MarkerKind = 'point' | 'line' | 'path'
+export const MARKER_KINDS: readonly MarkerKind[] = ['point', 'line', 'path']
 
 export interface Marker {
   id: string
@@ -48,6 +49,8 @@ export interface Marker {
   /** Line end point; null for point markers. */
   x2: number | null
   y2: number | null
+  /** Freehand paths only: the route in drawing order (first/last also in x,y / x2,y2). */
+  points: Point[] | null
   measurement: string
   reference_point: string
   note: string

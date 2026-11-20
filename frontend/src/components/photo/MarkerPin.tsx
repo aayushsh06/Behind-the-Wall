@@ -27,11 +27,16 @@ export function MarkerPin({ index, type, position, selected, draggable, surfaceR
       aria-label={`${UTILITY_META[type].label} marker ${index}`}
       aria-pressed={selected}
       {...handlers}
-      style={{ ...toPercentStyle(position), backgroundColor: UTILITY_META[type].hex }}
+      style={{
+        ...toPercentStyle(position),
+        backgroundColor: UTILITY_META[type].hex,
+        // Stay the same size on screen when the photo is zoomed (see ZoomViewport).
+        scale: selected ? 'calc(1.1 * var(--photo-unzoom, 1))' : 'var(--photo-unzoom, 1)',
+      }}
       className={cn(
         'absolute flex size-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full',
         'border-2 border-white text-sm font-bold text-white shadow-md touch-none',
-        selected && 'ring-4 ring-accent/70 scale-110',
+        selected && 'ring-4 ring-accent/70',
         draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
       )}
     >

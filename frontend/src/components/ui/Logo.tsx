@@ -25,15 +25,18 @@ export function LogoMark({ className, inverse = false }: { className?: string; i
   )
 }
 
-/** Wordmark: tight and bold, with "the" in a lighter weight of the same colour. */
+/** Wordmark: one even, medium-semibold weight throughout. */
 export function Logo({ inverse = false }: { inverse?: boolean }) {
   return (
     <span className="flex items-center gap-2.5">
       <LogoMark inverse={inverse} />
-      <span className={cn('text-[17px] leading-none tracking-[-0.035em]', inverse ? 'text-white' : 'text-fg')}>
-        <span className="font-extrabold">Behind</span>
-        <span className="font-medium"> the </span>
-        <span className="font-extrabold">Wall</span>
+      <span
+        className={cn(
+          'text-[17px] font-semibold leading-none tracking-[-0.025em]',
+          inverse ? 'text-white' : 'text-fg',
+        )}
+      >
+        Behind the Wall
       </span>
     </span>
   )

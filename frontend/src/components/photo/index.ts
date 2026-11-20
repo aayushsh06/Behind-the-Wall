@@ -1,4 +1,5 @@
 export { PhotoCanvas } from './PhotoCanvas'
+export { ZoomViewport } from './ZoomViewport'
 export type { CanvasMarker, LineEndpoint } from './PhotoCanvas'
 export { MarkerPin } from './MarkerPin'
 export { Handle } from './Handle'

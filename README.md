@@ -131,7 +131,7 @@ make build   # production frontend build
 | Find a wall | Homeowner: walls grouped by room. Tradesperson: clients, then rooms. Search | R1 |
 | See what is unknown | Coverage banner + hatched "not inspected" region | R2 |
 | Read a record | Wall detail: numbered pins, items table, author, date | R3 |
-| Record a wall | Tradesperson, on a phone or tablet: photo → wall size → details (homeowner email, invite if new) → tap-to-place items. On a desktop, recording and editing show a QR code to continue on the phone | R4 |
+| Record a wall | Tradesperson, on a phone or tablet: photo → wall size → details (homeowner email, invite if new) → mark items: pick the type, then trace runs freehand (they snap to the wire or pipe in the photo) or tap single points. On a desktop, recording and editing show a QR code to continue on the phone | R4 |
 | Compute positions | Drag two corner handles onto the wall and enter its size; every item's position is computed from the photo | R3, R4 |
 | Hand off | Wall goes to the homeowner's account; homeowner opens it as a PDF; share sheet sends the PDF or JSON | R5 |
 | Keep records | Stored server-side in SQLite + disk | R6 |

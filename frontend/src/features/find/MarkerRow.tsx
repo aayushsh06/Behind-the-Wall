@@ -14,7 +14,7 @@ interface MarkerRowProps {
 export function MarkerRow({ index, marker, calibration, selected, onSelect }: MarkerRowProps) {
   const meta = UTILITY_META[marker.type]
   const position = markerPosition(marker, calibration ?? null)
-  const title = [meta.label + (marker.kind === 'line' ? ' run' : ''), marker.measurement.trim()]
+  const title = [meta.label + (marker.kind === 'point' ? '' : ' run'), marker.measurement.trim()]
     .filter(Boolean)
     .join(' · ')
 

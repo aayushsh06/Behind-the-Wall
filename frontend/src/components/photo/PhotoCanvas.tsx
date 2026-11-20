@@ -1,5 +1,5 @@
-import { useRef } from 'react'
-import type { MouseEvent, ReactNode } from 'react'
+import { useRef, useState } from 'react'
+import type { MouseEvent, PointerEvent, ReactNode } from 'react'
 
 import type { CalibrationCorner } from '@/components/photo/CalibrationOverlay'
 import { CalibrationOverlay } from '@/components/photo/CalibrationOverlay'
@@ -9,6 +9,7 @@ import { Handle } from '@/components/photo/Handle'
 import { LineLayer } from '@/components/photo/LineLayer'
 import { MarkerPin } from '@/components/photo/MarkerPin'
 import { UncoveredRegionOverlay } from '@/components/photo/UncoveredRegionOverlay'
+import { pathMidpoint } from '@/domain/geometry'
 import type { MarkerKind, Region, UtilityType, WallCalibration } from '@/domain/types'
 import { UTILITY_META } from '@/domain/utility'
 import { cn } from '@/lib/cn'
@@ -21,6 +22,7 @@ export interface CanvasMarker {
   y: number
   x2: number | null
   y2: number | null
+  points?: Point[] | null
 }
 
 export type LineEndpoint = 'start' | 'end'
@@ -38,6 +40,12 @@ interface PhotoCanvasProps {
   pendingLineStart?: Point | null
   editable?: boolean
   calibrationEditable?: boolean
+  /** Freehand drawing: the colour of the stroke while drawing. Set to enable drawing. */
+  drawColor?: string | null
+  /** Called with the finished stroke (normalized points) when the finger lifts. */
+  onDrawComplete?: (points: Point[]) => void
+  /** A two-finger zoom is in progress: drop any stroke and ignore taps until it ends. */
+  gestureActive?: boolean
   onSelectMarker?: (id: string) => void
   onPlace?: (point: Point) => void
   onMoveMarker?: (id: string, point: Point) => void
@@ -47,10 +55,21 @@ interface PhotoCanvasProps {
   children?: ReactNode
 }
 
-const midpoint = (m: CanvasMarker): Point => ({
-  x: (m.x + (m.x2 ?? m.x)) / 2,
-  y: (m.y + (m.y2 ?? m.y)) / 2,
-})
+/** Where a marker's numbered badge sits: the point itself, or the middle of its run. */
+function badgePosition(m: CanvasMarker): Point {
+  if (m.kind === 'path' && m.points && m.points.length > 1) return pathMidpoint(m.points)
+  if (m.kind === 'line') return { x: (m.x + (m.x2 ?? m.x)) / 2, y: (m.y + (m.y2 ?? m.y)) / 2 }
+  return m
+}
+
+function runPoints(m: CanvasMarker): Point[] | null {
+  if (m.kind === 'path' && m.points && m.points.length > 1) return m.points
+  if (m.kind === 'line' && m.x2 !== null && m.y2 !== null) return [{ x: m.x, y: m.y }, { x: m.x2, y: m.y2 }]
+  return null
+}
+
+/** Ignore pointer jitter smaller than this (normalized) while drawing. */
+const MIN_STROKE_STEP = 0.003
 
 /**
  * Renders a photo at full width with markers positioned in normalized coordinates,
@@ -68,6 +87,9 @@ export function PhotoCanvas({
   pendingLineStart,
   editable = false,
   calibrationEditable = false,
+  drawColor = null,
+  onDrawComplete,
+  gestureActive = false,
   onSelectMarker,
   onPlace,
   onMoveMarker,
@@ -77,30 +99,58 @@ export function PhotoCanvas({
   children,
 }: PhotoCanvasProps) {
   const surfaceRef = useRef<HTMLDivElement>(null)
+  const [stroke, setStroke] = useState<Point[] | null>(null)
+  const drawing = Boolean(editable && drawColor && onDrawComplete)
+  // A pinch that starts mid-stroke cancels the stroke (adjusting state during render).
+  if (gestureActive && stroke) setStroke(null)
 
   const handleSurfaceClick = (event: MouseEvent<HTMLDivElement>) => {
-    if (!editable || !onPlace || !surfaceRef.current) return
+    if (gestureActive || drawing || !editable || !onPlace || !surfaceRef.current) return
     onPlace(toNormalizedPoint(surfaceRef.current, event.clientX, event.clientY))
   }
 
-  const lines = markers
-    .filter((m) => m.kind === 'line' && m.x2 !== null && m.y2 !== null)
-    .map((m) => ({
-      id: m.id,
-      type: m.type,
-      start: { x: m.x, y: m.y },
-      end: { x: m.x2!, y: m.y2! },
-      selected: m.id === selectedMarkerId,
-    }))
+  const pointAt = (event: PointerEvent<HTMLDivElement>) =>
+    toNormalizedPoint(surfaceRef.current!, event.clientX, event.clientY)
+
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (!drawing || gestureActive || !surfaceRef.current) return
+    event.currentTarget.setPointerCapture(event.pointerId)
+    setStroke([pointAt(event)])
+  }
+
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!stroke || gestureActive || !surfaceRef.current) return
+    const next = pointAt(event)
+    const last = stroke[stroke.length - 1]!
+    if (Math.hypot(next.x - last.x, next.y - last.y) < MIN_STROKE_STEP) return
+    setStroke([...stroke, next])
+  }
+
+  const finishStroke = () => {
+    if (!stroke || gestureActive) return
+    const done = stroke
+    setStroke(null)
+    if (done.length > 1) onDrawComplete?.(done)
+  }
+
+  const lines = markers.flatMap((m) => {
+    const points = runPoints(m)
+    return points ? [{ id: m.id, type: m.type, points, selected: m.id === selectedMarkerId }] : []
+  })
   const selectedLine = editable ? markers.find((m) => m.id === selectedMarkerId && m.kind === 'line') : undefined
 
   return (
     <div
       ref={surfaceRef}
       onClick={handleSurfaceClick}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={finishStroke}
+      onPointerCancel={() => setStroke(null)}
       className={cn(
         'relative w-full overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-line select-none',
         editable && 'cursor-crosshair',
+        drawing && 'touch-none',
       )}
       style={{ aspectRatio }}
     >
@@ -114,7 +164,7 @@ export function PhotoCanvas({
           onMoveCorner={onMoveCalibrationCorner}
         />
       ) : null}
-      <LineLayer lines={lines} />
+      <LineLayer lines={lines} liveStroke={stroke && drawColor ? { points: stroke, color: drawColor } : null} />
       {pendingLineStart ? (
         <span
           aria-label="Line start"
@@ -123,19 +173,19 @@ export function PhotoCanvas({
         />
       ) : null}
       {markers.map((marker, index) => {
-        const isLine = marker.kind === 'line'
+        const isRun = marker.kind !== 'point'
         return (
           <MarkerPin
             key={marker.id}
             index={index + 1}
             type={marker.type}
-            position={isLine ? midpoint(marker) : marker}
+            position={badgePosition(marker)}
             selected={marker.id === selectedMarkerId}
             draggable={editable}
             surfaceRef={surfaceRef}
             onSelect={() => onSelectMarker?.(marker.id)}
             onMove={(point, previous) =>
-              isLine
+              isRun
                 ? onTranslateMarker?.(marker.id, point.x - previous.x, point.y - previous.y)
                 : onMoveMarker?.(marker.id, point)
             }
