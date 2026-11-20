@@ -17,6 +17,9 @@ export const authApi = {
   register: (input: RegisterInput) => http.post<User>('/auth/register', input),
   login: (input: LoginInput) => http.post<User>('/auth/login', input),
   logout: () => http.post<void>('/auth/logout', {}),
+  verifyEmail: (token: string) =>
+    http.post<{ email: string; walls_received: number }>('/auth/verify-email', { token }),
+  resendVerification: () => http.post<void>('/auth/resend-verification', {}),
   /** The signed-in user, or null when there is no valid session. */
   me: async (): Promise<User | null> => {
     try {

@@ -141,6 +141,8 @@ export interface User {
   name: string
   email: string
   role: Role
+  /** False until the account clicks the link in its confirmation email. */
+  email_verified: boolean
 }
 
 export type AccessStatus = 'pending' | 'approved' | 'declined' | 'revoked'
@@ -156,7 +158,7 @@ export interface AccessGrant {
   tradesperson: AccountBrief
 }
 
-export type HomeownerStatus = 'registered' | 'not_registered' | 'not_a_homeowner'
+export type HomeownerStatus = 'registered' | 'unconfirmed' | 'not_registered' | 'not_a_homeowner'
 
 export interface InviteResult {
   email: string

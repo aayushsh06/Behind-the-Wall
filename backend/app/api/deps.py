@@ -59,6 +59,13 @@ def get_current_user(request: Request, users: UserRepoDep, settings: SettingsDep
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 
 
+def get_verified_user(user: CurrentUserDep) -> User:
+    """Records are only for accounts that have confirmed their email address."""
+    if not user.email_verified:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Confirm your email address to continue")
+    return user
+
+
 def get_access_repository(session: SessionDep) -> AccessRepository:
     return AccessRepository(session)
 

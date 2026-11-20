@@ -31,6 +31,8 @@ variables (see `app/core/config.py`).
 |---|---|---|
 | POST | `/api/auth/register` | create an account and sign in |
 | POST | `/api/auth/login` / `/api/auth/logout` | start or end a session (cookie) |
+| POST | `/api/auth/verify-email` | confirm an email address with the emailed token |
+| POST | `/api/auth/resend-verification` | email a new confirmation link |
 | GET | `/api/auth/me` | the signed-in user |
 | GET | `/api/walls` | list wall summaries |
 | POST | `/api/walls` | create a wall |
@@ -46,7 +48,8 @@ variables (see `app/core/config.py`).
 | GET | `/api/homeowners/lookup?email=` | (tradesperson) whether an email can receive walls |
 | POST | `/api/invites` | (tradesperson) invite an email that has a wall waiting |
 
-Everything except `/api/health` and `/api/auth/*` returns 401 without a session.
+Everything except `/api/health` and `/api/auth/*` returns 401 without a session, and 403
+until the account has confirmed its email address.
 Passwords are hashed with scrypt; demo accounts are created on startup
 (`app/services/demo_accounts.py`, disable with `BTW_DEMO_ACCOUNTS=false`).
 

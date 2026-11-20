@@ -38,6 +38,8 @@ class AccessDecision(StrEnum):
 
 class HomeownerStatus(StrEnum):
     REGISTERED = "registered"
+    # Signed up as a homeowner but hasn't confirmed the email yet; walls are held.
+    UNCONFIRMED = "unconfirmed"
     NOT_REGISTERED = "not_registered"
     NOT_A_HOMEOWNER = "not_a_homeowner"
 

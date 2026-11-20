@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppShell } from '@/app/layout/AppShell'
 import { routePatterns } from '@/app/routes'
 import { AuthLayout } from '@/features/auth/AuthLayout'
+import { VerifyEmailPage } from '@/features/auth/EmailConfirmation'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RegisterPage } from '@/features/auth/RegisterPage'
 import { RequireAuth, TradespersonOnly } from '@/features/auth/RequireAuth'
@@ -14,6 +15,8 @@ import { WallListPage } from '@/features/find/WallListPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 
 export const router = createBrowserRouter([
+  // Works signed in or out, so it sits outside both the public and signed-in layouts.
+  { path: routePatterns.verifyEmail, element: <VerifyEmailPage /> },
   {
     element: <AuthLayout />,
     children: [

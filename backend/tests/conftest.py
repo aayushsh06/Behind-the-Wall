@@ -1,6 +1,7 @@
 """Test fixtures: each session gets a fresh SQLite database and photo directory."""
 
 import os
+import re
 from collections.abc import Callable, Iterator
 from io import BytesIO
 from pathlib import Path
@@ -34,19 +35,56 @@ TEST_HOMEOWNER = {
 }
 
 
+# Every email the app sends during the test run: (to, subject, body).
+OUTBOX: list[tuple[str, str, str]] = []
+_TOKEN = re.compile(r"/verify-email\?token=([A-Za-z0-9_-]+)")
+
+
+def last_email(to: str) -> tuple[str, str, str]:
+    return next(m for m in reversed(OUTBOX) if m[0] == to.lower())
+
+
+def confirm_email(client: TestClient, email: str) -> dict:
+    """Click the link in the latest confirmation email sent to ``email``."""
+    match = _TOKEN.search(last_email(email)[2])
+    assert match, "no confirmation link in the email"
+    response = client.post("/api/auth/verify-email", json={"token": match.group(1)})
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def register_confirmed(client: TestClient, payload: dict) -> None:
+    response = client.post("/api/auth/register", json=payload)
+    assert response.status_code == 201, response.text
+    confirm_email(client, payload["email"])
+
+
 @pytest.fixture(scope="session")
 def client(data_dir: Path) -> Iterator[TestClient]:
     """A client signed in as the TEST_USER tradesperson; its cookie jar carries the session."""
     # Import after the env var is set so settings and engine pick up the temp dir.
+    from app.api.deps import get_mailer
     from app.main import app
+    from app.services.mailer import Mailer
 
+    class OutboxMailer(Mailer):
+        """Stands in for SMTP: 'sends' by appending to OUTBOX."""
+
+        def __init__(self) -> None:
+            pass
+
+        configured = True
+
+        def send(self, to: str, subject: str, body: str) -> None:
+            OUTBOX.append((to.lower(), subject, body))
+
+    app.dependency_overrides[get_mailer] = OutboxMailer
     with TestClient(app) as test_client:
         with TestClient(app) as owner:
-            response = owner.post("/api/auth/register", json=TEST_HOMEOWNER)
-            assert response.status_code == 201, response.text
-        response = test_client.post("/api/auth/register", json=TEST_USER)
-        assert response.status_code == 201, response.text
+            register_confirmed(owner, TEST_HOMEOWNER)
+        register_confirmed(test_client, TEST_USER)
         yield test_client
+    app.dependency_overrides.pop(get_mailer, None)
 
 
 @pytest.fixture
@@ -121,8 +159,7 @@ def account(client: TestClient) -> Iterator[Callable[..., TestClient]]:
         credentials = {"email": email, "password": PASSWORD}
         if test_client.post("/api/auth/login", json=credentials).status_code == 401:
             body = {**credentials, "role": role, "name": name or email.split("@")[0].title()}
-            response = test_client.post("/api/auth/register", json=body)
-            assert response.status_code == 201, response.text
+            register_confirmed(test_client, body)
         return test_client
 
     yield sign_in

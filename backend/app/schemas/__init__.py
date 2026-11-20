@@ -7,7 +7,14 @@ from app.schemas.access import (
     InviteRead,
     InviteRequest,
 )
-from app.schemas.auth import LoginRequest, RegisterRequest, Role, UserRead
+from app.schemas.auth import (
+    LoginRequest,
+    RegisterRequest,
+    Role,
+    UserRead,
+    VerifyEmailRequest,
+    VerifyEmailResult,
+)
 from app.schemas.calibration import WallCalibration
 from app.schemas.common import Coverage, LengthUnit, Point, Region, UtilityType
 from app.schemas.marker import Marker, MarkerKind
@@ -41,6 +48,8 @@ __all__ = [
     "RegisterRequest",
     "Role",
     "UserRead",
+    "VerifyEmailRequest",
+    "VerifyEmailResult",
     "UtilityType",
     "WallCalibration",
     "WallCreate",

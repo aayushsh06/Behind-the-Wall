@@ -16,8 +16,8 @@ services:
       # Public address used in invitation links, e.g. https://behind-the-wall.onrender.com
       - key: BTW_PUBLIC_URL
         sync: false
-      # Optional: outgoing mail for invitations. Without these, tradespeople send the
-      # invitation link from their own email app.
+      # Outgoing mail. Required for real use: new accounts must confirm their email.
+      # Without it, confirmation links are only written to the server log.
       - key: BTW_SMTP_HOST
         sync: false
       - key: BTW_SMTP_USERNAME

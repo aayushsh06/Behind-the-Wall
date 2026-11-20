@@ -14,6 +14,7 @@ from app.api.deps import (
     UserRepoDep,
     WallRepoDep,
 )
+from app.api.links import public_base
 from app.schemas import HomeownerLookup, HomeownerStatus, InviteRead, InviteRequest, Role
 from app.services.mailer import MailError
 
@@ -27,6 +28,8 @@ def lookup_homeowner(email: str, users: UserRepoDep, user: CurrentUserDep) -> Ho
     account = users.get_by_email(email)
     if account is None:
         found = HomeownerStatus.NOT_REGISTERED
+    elif account.role == Role.HOMEOWNER and not account.email_verified:
+        found = HomeownerStatus.UNCONFIRMED
     elif account.role == Role.HOMEOWNER:
         found = HomeownerStatus.REGISTERED
     else:
@@ -51,11 +54,15 @@ def send_invite(
 ) -> InviteRead:
     require_tradesperson(user)
     email = payload.email
-    if users.get_by_email(email) is not None:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "This person already has an account, so walls go straight to them.",
+    existing = users.get_by_email(email)
+    if existing is not None:
+        detail = (
+            "This person has signed up but hasn't confirmed their email yet. Their walls are "
+            "held until they do."
+            if not existing.email_verified
+            else "This person already has an account, so walls go straight to them."
         )
+        raise HTTPException(status.HTTP_409_CONFLICT, detail)
     # Invitations only go to people this tradesperson has actually sent a wall to.
     if not walls.has_pending_for(email, user.id):
         raise HTTPException(
@@ -63,7 +70,7 @@ def send_invite(
             "Send this homeowner a wall before inviting them.",
         )
 
-    base = (settings.public_url or str(request.base_url)).rstrip("/")
+    base = public_base(request, settings)
     url = f"{base}/register?{urlencode({'email': email, 'role': 'homeowner'})}"
     invite = invites.upsert(email, user.id)
 
