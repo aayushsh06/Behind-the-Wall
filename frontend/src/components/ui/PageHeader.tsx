@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 interface PageHeaderProps {
   title: string
   subtitle?: string
   /** Small label above the title. */
   eyebrow?: string
+  /** Where Back goes when there is no earlier screen in this tab (e.g. a shared link). */
   backTo?: string
-  /** Where the back link goes, in words (e.g. "Demo Homeowner"). Defaults to "Back". */
+  /** Name of the backTo screen (e.g. "Demo Homeowner"), shown only when Back goes there. */
   backLabel?: string
   action?: ReactNode
 }
@@ -17,18 +18,31 @@ interface PageHeaderProps {
  * and long names wrap instead of being cut off.
  */
 export function PageHeader({ title, subtitle, eyebrow, backTo, backLabel = 'Back', action }: PageHeaderProps) {
+  const location = useLocation()
+  const navigate = useNavigate()
+  // Back returns to the screen you came from. Only a page opened directly (no earlier
+  // screen in this tab) falls back to its parent screen.
+  const hasHistory = location.key !== 'default'
+  const label = hasHistory ? 'Back' : backLabel
+  const className =
+    '-ml-1 mb-4 inline-flex max-w-full items-center gap-1.5 rounded-full py-1 pl-1 pr-3 text-sm font-semibold text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg'
+  const content = (
+    <>
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 4l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span className="truncate">{label}</span>
+    </>
+  )
   return (
     <header className="mb-8">
-      {backTo ? (
-        <Link
-          to={backTo}
-          aria-label={backLabel === 'Back' ? 'Back' : `Back to ${backLabel}`}
-          className="-ml-1 mb-4 inline-flex max-w-full items-center gap-1.5 rounded-full py-1 pl-1 pr-3 text-sm font-semibold text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
-        >
-          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 4l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <span className="truncate">{backLabel}</span>
+      {backTo && hasHistory ? (
+        <button type="button" onClick={() => void navigate(-1)} className={className}>
+          {content}
+        </button>
+      ) : backTo ? (
+        <Link to={backTo} aria-label={label === 'Back' ? 'Back' : `Back to ${label}`} className={className}>
+          {content}
         </Link>
       ) : null}
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">

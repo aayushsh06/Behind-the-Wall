@@ -73,7 +73,6 @@ PAGE_W, PAGE_H = LETTER
 FRAME_PAD = 6
 CONTENT_W = PAGE_W - 2 * MARGIN - 2 * FRAME_PAD
 LEFT_X, RIGHT_X = MARGIN + FRAME_PAD, PAGE_W - MARGIN - FRAME_PAD
-COURSE_LINE = "Human-Centered Software Design & Development Project | Fall 2026"
 
 COVERAGE_TEXT = {
     Coverage.FULL: "Whole wall",
@@ -334,12 +333,11 @@ class _NumberedCanvas(pdfcanvas.Canvas):
         self.saveState()
         self.setStrokeColor(LINE)
         self.setLineWidth(0.6)
-        self.line(LEFT_X, 0.62 * inch, RIGHT_X, 0.62 * inch)
+        self.line(LEFT_X, 0.58 * inch, RIGHT_X, 0.58 * inch)
         self.setFont(REGULAR, 7.5)
         self.setFillColor(FAINT)
-        self.drawString(LEFT_X, 0.45 * inch, self.footer_left)
-        self.drawRightString(RIGHT_X, 0.45 * inch, f"Page {self._pageNumber} of {total}")
-        self.drawString(LEFT_X, 0.3 * inch, COURSE_LINE)
+        self.drawString(LEFT_X, 0.4 * inch, self.footer_left)
+        self.drawRightString(RIGHT_X, 0.4 * inch, f"Page {self._pageNumber} of {total}")
         self.restoreState()
 
 

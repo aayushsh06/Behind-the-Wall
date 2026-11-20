@@ -3,7 +3,7 @@ import { UTILITY_TYPES } from '@/domain/types'
 import { UTILITY_META } from '@/domain/utility'
 import { cn } from '@/lib/cn'
 
-export type MarkerTool = 'draw' | 'point'
+export type MarkerTool = 'scroll' | 'draw' | 'point'
 
 interface MarkerToolbarProps {
   utility: UtilityType
@@ -14,9 +14,12 @@ interface MarkerToolbarProps {
   onSnapChange: (snap: boolean) => void
 }
 
+// "Scroll" is the safe default: the photo scrolls and zooms like the rest of the page, so
+// nothing is drawn by accident. Drawing or placing only happens once chosen.
 const TOOLS: { value: MarkerTool; label: string }[] = [
-  { value: 'draw', label: 'Draw a run' },
-  { value: 'point', label: 'Place a point' },
+  { value: 'scroll', label: 'Scroll' },
+  { value: 'draw', label: 'Draw run' },
+  { value: 'point', label: 'Add point' },
 ]
 
 /** Choose what is being marked, then how: trace a run freehand, or tap a single spot. */
@@ -60,7 +63,7 @@ export function MarkerToolbar({ utility, onUtilityChange, tool, onToolChange, sn
               aria-checked={tool === option.value}
               onClick={() => onToolChange(option.value)}
               className={cn(
-                'flex-1 rounded-full px-4 py-2 text-sm font-semibold transition-colors sm:flex-none',
+                'flex-1 whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold transition-colors sm:flex-none sm:px-4',
                 tool === option.value ? 'bg-surface text-fg shadow-card' : 'text-fg-muted hover:text-fg',
               )}
             >

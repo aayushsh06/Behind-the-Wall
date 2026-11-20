@@ -10,16 +10,33 @@ interface CalibrationOverlayProps {
   calibration: WallCalibration
   editable?: boolean
   surfaceRef: React.RefObject<HTMLElement | null>
+  /** Shade everything outside the frame (where marks can't go). */
+  dimOutside?: boolean
   onMoveCorner?: (corner: CalibrationCorner, point: Point) => void
 }
 
 /** Dashed outline of the calibrated wall area with its real dimensions, plus corner handles when editing. */
-export function CalibrationOverlay({ calibration, editable, surfaceRef, onMoveCorner }: CalibrationOverlayProps) {
+export function CalibrationOverlay({ calibration, editable, surfaceRef, dimOutside = false, onMoveCorner }: CalibrationOverlayProps) {
   const { top_left: tl, bottom_right: br } = calibration
   const valid = br.x > tl.x && br.y > tl.y
 
   return (
     <>
+      {valid && dimOutside ? (
+        // Shade the photo outside the frame: marks can only go inside it.
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 size-full motion-safe:animate-[fade-in_200ms_ease-out]"
+          viewBox="0 0 1 1"
+          preserveAspectRatio="none"
+        >
+          <path
+            fillRule="evenodd"
+            fill="rgba(16, 18, 22, 0.5)"
+            d={`M0 0H1V1H0Z M${tl.x} ${tl.y}V${br.y}H${br.x}V${tl.y}Z`}
+          />
+        </svg>
+      ) : null}
       {valid ? (
         <div
           aria-label={`Wall ${describeWallSize(calibration)}`}

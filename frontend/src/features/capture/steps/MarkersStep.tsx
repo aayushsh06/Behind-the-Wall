@@ -7,6 +7,8 @@ import { isCalibrationValid, markerPosition } from '@/domain/geometry'
 import type { UtilityType } from '@/domain/types'
 import { UTILITY_META } from '@/domain/utility'
 import { MarkerForm } from '@/features/capture/MarkerForm'
+import type { Bounds } from '@/components/photo/bounds'
+import { clampToBounds, FULL_PHOTO } from '@/components/photo/bounds'
 import type { MarkerTool } from '@/features/capture/MarkerToolbar'
 import { MarkerToolbar } from '@/features/capture/MarkerToolbar'
 import { smoothStroke, snapStroke } from '@/features/capture/snapPath'
@@ -38,7 +40,7 @@ function smoothNormalized(points: Point[]): Point[] {
 
 export function MarkersStep({ draft, dispatch, submitting, submitError, submitLabel, onBack, onSubmit }: MarkersStepProps) {
   const [utility, setUtility] = useState<UtilityType>('wire')
-  const [tool, setTool] = useState<MarkerTool>('draw')
+  const [tool, setTool] = useState<MarkerTool>('scroll')
   const [snap, setSnap] = useState(true)
   const [status, setStatus] = useState<DrawStatus>(null)
 
@@ -48,6 +50,10 @@ export function MarkersStep({ draft, dispatch, submitting, submitError, submitLa
   const canPlace = draft.photo !== null && draft.coverage !== 'none'
   const calibration = isCalibrationValid(draft.calibration) ? draft.calibration : null
   const label = UTILITY_META[utility].label.toLowerCase()
+  // Runs and points stay inside the wall frame marked on the dimensions step.
+  const bounds: Bounds = calibration
+    ? { x0: calibration.top_left.x, y0: calibration.top_left.y, x1: calibration.bottom_right.x, y1: calibration.bottom_right.y }
+    : FULL_PHOTO
   const lastMarker = draft.markers[draft.markers.length - 1]
 
   /**
@@ -72,7 +78,7 @@ export function MarkersStep({ draft, dispatch, submitting, submitError, submitLa
           stroke.map((p) => ({ x: p.x * image.width, y: p.y * image.height })),
           { corridor },
         )
-        points = result.points.map((p) => ({ x: p.x / image.width, y: p.y / image.height }))
+        points = result.points.map((p) => clampToBounds({ x: p.x / image.width, y: p.y / image.height }, bounds))
         outcome = result.snapped ? 'snapped' : 'kept'
       } catch {
         outcome = 'kept'
@@ -83,7 +89,9 @@ export function MarkersStep({ draft, dispatch, submitting, submitError, submitLa
   }
 
   const instructions =
-    tool === 'draw'
+    tool === 'scroll'
+      ? 'Scroll the page and pinch to zoom without marking anything. Choose Draw run to trace a run, or Add point to mark a single spot. Marks stay inside the wall frame.'
+      : tool === 'draw'
       ? `Trace the ${label} with your finger.${snap ? ` When you lift, it snaps to the ${label} in the photo.` : ''} Pinch with two fingers to zoom in where cables run close together.`
       : `Tap the photo where each ${label} item is, like a box or valve. Drag a pin to adjust; pinch to zoom.`
 
@@ -116,6 +124,9 @@ export function MarkersStep({ draft, dispatch, submitting, submitError, submitLa
                 editable
                 gestureActive={pinching}
                 drawColor={tool === 'draw' ? UTILITY_META[utility].hex : null}
+                drawBounds={bounds}
+                pinsDraggable={tool !== 'scroll'}
+                dimOutsideFrame={tool !== 'scroll'}
                 onDrawComplete={(stroke) => void handleDrawComplete(stroke, zoom)}
                 onPlace={tool === 'point' ? (point) => dispatch({ type: 'addMarker', point, utility }) : undefined}
                 onSelectMarker={(id) => dispatch({ type: 'selectMarker', id })}

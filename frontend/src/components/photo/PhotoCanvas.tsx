@@ -3,6 +3,8 @@ import type { MouseEvent, PointerEvent, ReactNode } from 'react'
 
 import type { CalibrationCorner } from '@/components/photo/CalibrationOverlay'
 import { CalibrationOverlay } from '@/components/photo/CalibrationOverlay'
+import type { Bounds } from '@/components/photo/bounds'
+import { clampToBounds, insideBounds, strokeLength } from '@/components/photo/bounds'
 import type { Point } from '@/components/photo/coordinates'
 import { toNormalizedPoint, toPercentStyle } from '@/components/photo/coordinates'
 import { Handle } from '@/components/photo/Handle'
@@ -46,6 +48,12 @@ interface PhotoCanvasProps {
   onDrawComplete?: (points: Point[]) => void
   /** A two-finger zoom is in progress: drop any stroke and ignore taps until it ends. */
   gestureActive?: boolean
+  /** Strokes and taps outside this area are ignored; strokes are kept inside it. */
+  drawBounds?: Bounds | null
+  /** Whether pins can be dragged (selecting by tap always works). Defaults to editable. */
+  pinsDraggable?: boolean
+  /** Shade the photo outside the wall frame to show where marks can go. */
+  dimOutsideFrame?: boolean
   onSelectMarker?: (id: string) => void
   onPlace?: (point: Point) => void
   onMoveMarker?: (id: string, point: Point) => void
@@ -70,6 +78,8 @@ function runPoints(m: CanvasMarker): Point[] | null {
 
 /** Ignore pointer jitter smaller than this (normalized) while drawing. */
 const MIN_STROKE_STEP = 0.003
+/** A stroke shorter than this (normalized) is a stray touch, not a run. */
+const MIN_STROKE_LENGTH = 0.04
 
 /**
  * Renders a photo at full width with markers positioned in normalized coordinates,
@@ -90,6 +100,9 @@ export function PhotoCanvas({
   drawColor = null,
   onDrawComplete,
   gestureActive = false,
+  drawBounds = null,
+  pinsDraggable,
+  dimOutsideFrame = false,
   onSelectMarker,
   onPlace,
   onMoveMarker,
@@ -106,7 +119,9 @@ export function PhotoCanvas({
 
   const handleSurfaceClick = (event: MouseEvent<HTMLDivElement>) => {
     if (gestureActive || drawing || !editable || !onPlace || !surfaceRef.current) return
-    onPlace(toNormalizedPoint(surfaceRef.current, event.clientX, event.clientY))
+    const point = toNormalizedPoint(surfaceRef.current, event.clientX, event.clientY)
+    if (drawBounds && !insideBounds(point, drawBounds)) return
+    onPlace(point)
   }
 
   const pointAt = (event: PointerEvent<HTMLDivElement>) =>
@@ -114,13 +129,17 @@ export function PhotoCanvas({
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!drawing || gestureActive || !surfaceRef.current) return
+    const start = pointAt(event)
+    // Only start a run inside the wall frame.
+    if (drawBounds && !insideBounds(start, drawBounds)) return
     event.currentTarget.setPointerCapture(event.pointerId)
-    setStroke([pointAt(event)])
+    setStroke([start])
   }
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
     if (!stroke || gestureActive || !surfaceRef.current) return
-    const next = pointAt(event)
+    const raw = pointAt(event)
+    const next = drawBounds ? clampToBounds(raw, drawBounds) : raw
     const last = stroke[stroke.length - 1]!
     if (Math.hypot(next.x - last.x, next.y - last.y) < MIN_STROKE_STEP) return
     setStroke([...stroke, next])
@@ -130,7 +149,7 @@ export function PhotoCanvas({
     if (!stroke || gestureActive) return
     const done = stroke
     setStroke(null)
-    if (done.length > 1) onDrawComplete?.(done)
+    if (done.length > 1 && strokeLength(done) >= MIN_STROKE_LENGTH) onDrawComplete?.(done)
   }
 
   const lines = markers.flatMap((m) => {
@@ -160,6 +179,7 @@ export function PhotoCanvas({
         <CalibrationOverlay
           calibration={calibration}
           editable={calibrationEditable}
+          dimOutside={dimOutsideFrame}
           surfaceRef={surfaceRef}
           onMoveCorner={onMoveCalibrationCorner}
         />
@@ -181,7 +201,7 @@ export function PhotoCanvas({
             type={marker.type}
             position={badgePosition(marker)}
             selected={marker.id === selectedMarkerId}
-            draggable={editable}
+            draggable={pinsDraggable ?? editable}
             surfaceRef={surfaceRef}
             onSelect={() => onSelectMarker?.(marker.id)}
             onMove={(point, previous) =>

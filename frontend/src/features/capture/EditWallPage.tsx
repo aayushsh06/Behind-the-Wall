@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { photosApi } from '@/api/photos'
 import { routes } from '@/app/routes'
@@ -13,6 +13,7 @@ import { useUpdateWall } from '@/hooks/useWallMutations'
 export function EditWallPage() {
   const { id = '' } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const wallQuery = useWall(id)
   const photoQuery = usePhoto(wallQuery.data?.photo_id)
   const updateWall = useUpdateWall(id)
@@ -36,7 +37,11 @@ export function EditWallPage() {
         submitError={updateWall.error}
         destination={{ mode: 'fixed', owner: wall.owner, pendingEmail: wall.pending_owner_email }}
         onSubmit={(input) =>
-          updateWall.mutate(input, { onSuccess: () => navigate(routes.wall(wall.id), { replace: true }) })
+          updateWall.mutate(input, {
+            // Back to the wall page you came from, so Back there still leads where it did.
+            onSuccess: () =>
+              location.key !== 'default' ? navigate(-1) : navigate(routes.wall(wall.id), { replace: true }),
+          })
         }
       />
     </div>
