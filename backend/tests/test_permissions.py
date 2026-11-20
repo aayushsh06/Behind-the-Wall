@@ -8,7 +8,7 @@ only after the homeowner approves their access request.
 import pytest
 from fastapi.testclient import TestClient
 
-from tests.conftest import OUTBOX, TEST_HOMEOWNER, confirm_email, last_email, wall_payload
+from tests.conftest import TEST_HOMEOWNER, wall_payload
 from tests.helpers import upload, wall_ids
 
 HOME = TEST_HOMEOWNER["email"]
@@ -209,25 +209,14 @@ def test_invited_homeowner_receives_waiting_walls_on_sign_up(
     invite = client.post("/api/invites", json={"email": email.upper()})
     assert invite.status_code == 200
     body = invite.json()
-    assert body["emailed"] is True
+    assert body["emailed"] is False  # no SMTP in tests
     assert "/register?" in body["invite_url"] and "invitee%40example.com" in body["invite_url"]
-    assert body["invite_url"] in last_email(email)[2]
 
     signed_up = anon_client.post(
         "/api/auth/register",
         json={"name": "New Owner", "email": email, "password": "long-enough", "role": "homeowner"},
     )
     assert signed_up.status_code == 201
-    # Nothing moves until they prove they own the email address.
-    assert anon_client.get(f"/api/walls/{wall['id']}").status_code == 403
-    assert client.get(f"/api/walls/{wall['id']}").json()["pending_owner_email"] == email
-    assert client.get("/api/homeowners/lookup", params={"email": email}).json()["status"] == (
-        "unconfirmed"
-    )
-    unconfirmed = client.post("/api/invites", json={"email": email})
-    assert unconfirmed.status_code == 409 and "hasn't confirmed" in unconfirmed.json()["detail"]
-
-    assert confirm_email(anon_client, email)["walls_received"] == 1
     claimed = anon_client.get(f"/api/walls/{wall['id']}").json()
     assert claimed["owner"]["email"] == email
     assert claimed["pending_owner_email"] is None
@@ -240,32 +229,32 @@ def test_invites_only_for_people_sent_a_wall(client: TestClient) -> None:
     assert response.status_code == 422
 
 
-def test_invite_emails_are_throttled(client: TestClient, uploaded_photo: dict) -> None:
-    email = "mailme@example.com"
-    client.post(
-        "/api/walls", json=wall_payload(uploaded_photo["id"], homeowner_email=email, invite=True)
-    )
-    before = len(OUTBOX)
-    first = client.post("/api/invites", json={"email": email}).json()
-    second = client.post("/api/invites", json={"email": email}).json()
-    assert first["emailed"] is True and second["emailed"] is False
-    assert len(OUTBOX) == before + 1
-    to, subject, body = OUTBOX[-1]
-    assert to == email and "Test Plumber" in subject and first["invite_url"] in body
-
-
-def test_walls_for_an_unconfirmed_homeowner_are_held(
-    client: TestClient, uploaded_photo: dict, anon_client: TestClient
+def test_invite_is_emailed_when_smtp_is_configured(
+    client: TestClient, uploaded_photo: dict, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    email = "squatter-target@example.com"
-    anon_client.post(
-        "/api/auth/register",
-        json={"name": "Someone", "email": email, "password": "long-enough", "role": "homeowner"},
-    )
-    # No invite needed (they signed up), but the wall waits for them to confirm.
-    wall = client.post(
-        "/api/walls", json=wall_payload(uploaded_photo["id"], homeowner_email=email)
-    ).json()
-    assert wall["owner"] is None and wall["pending_owner_email"] == email
-    refused = client.post("/api/access-requests", json={"homeowner_email": email})
-    assert refused.status_code == 422
+    from app.api.deps import get_mailer
+    from app.services.mailer import Mailer
+
+    sent: list[tuple[str, str, str]] = []
+
+    class FakeMailer(Mailer):
+        configured = True
+
+        def send(self, to: str, subject: str, body: str) -> None:
+            sent.append((to, subject, body))
+
+    client.app.dependency_overrides[get_mailer] = lambda: FakeMailer.__new__(FakeMailer)
+    try:
+        email = "mailme@example.com"
+        client.post(
+            "/api/walls",
+            json=wall_payload(uploaded_photo["id"], homeowner_email=email, invite=True),
+        )
+        first = client.post("/api/invites", json={"email": email}).json()
+        second = client.post("/api/invites", json={"email": email}).json()
+    finally:
+        client.app.dependency_overrides.pop(get_mailer)
+    assert first["emailed"] is True and second["emailed"] is False  # resend throttled
+    assert len(sent) == 1
+    to, subject, body = sent[0]
+    assert to == email and "Test Plumber" in subject and first["invite_url"] in body

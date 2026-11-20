@@ -66,11 +66,6 @@ export function DetailsStep({ draft, dispatch, knownRooms, destination, onBack, 
               <option key={email} value={email} />
             ))}
           </datalist>
-          {homeowner.status === 'unconfirmed' ? (
-            <p className="-mt-2 text-sm text-amber-800">
-              This homeowner has signed up but hasn’t confirmed their email yet. The wall will be held until they do.
-            </p>
-          ) : null}
           {homeowner.status === 'registered' ? (
             <p className="-mt-2 text-sm text-green-700">This homeowner has an account. The wall goes straight to them.</p>
           ) : null}

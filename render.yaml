@@ -16,9 +16,9 @@ services:
       # Public address used in invitation links, e.g. https://behind-the-wall.onrender.com
       - key: BTW_PUBLIC_URL
         sync: false
-      # Outgoing mail via Brevo's free plan (300 emails/day). Required for real use:
-      # new accounts must confirm their email. Fill in the three secrets below in the
-      # Render dashboard; see "Email" in README.md.
+      # Optional: send invitation emails through Brevo's free plan (300 emails/day).
+      # Without the secrets below, tradespeople send the invitation link from their own
+      # email app. See "Email" in README.md.
       - key: BTW_SMTP_HOST
         value: smtp-relay.brevo.com
       - key: BTW_SMTP_PORT

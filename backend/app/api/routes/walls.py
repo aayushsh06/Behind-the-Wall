@@ -61,16 +61,13 @@ def create_wall(
     check_photo_attachable(photos, walls, payload.photo_id, user, viewer)
     email = payload.homeowner_email
     homeowner = users.get_by_email(email)
-    if homeowner is not None and homeowner.role != Role.HOMEOWNER:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_CONTENT,
-            "That email belongs to a tradesperson account, not a homeowner.",
-        )
-    if homeowner is not None and homeowner.email_verified:
+    if homeowner is not None:
+        if homeowner.role != Role.HOMEOWNER:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                "That email belongs to a tradesperson account, not a homeowner.",
+            )
         wall = walls.create(payload.to_create(), owner_id=homeowner.id, created_by_id=user.id)
-    elif homeowner is not None:
-        # Signed up but unconfirmed: hold the wall until they prove they own the email.
-        wall = walls.create(payload.to_create(), pending_owner_email=email, created_by_id=user.id)
     else:
         if not payload.invite:
             raise HTTPException(

@@ -44,10 +44,6 @@ class Settings(BaseSettings):
     smtp_starttls: bool = True
     # Minimum minutes between invitation emails to the same address from one sender.
     invite_resend_minutes: int = 10
-    # Email confirmation links stop working after this many hours.
-    verification_hours: int = 48
-    # Minimum seconds between confirmation emails to one account.
-    verification_resend_seconds: int = 60
 
     @property
     def photos_dir(self) -> Path:

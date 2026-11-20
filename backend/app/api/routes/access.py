@@ -36,7 +36,7 @@ def request_access(
 ) -> AccessGrant:
     require_tradesperson(user)
     homeowner = users.get_by_email(payload.homeowner_email)
-    if homeowner is None or homeowner.role != Role.HOMEOWNER or not homeowner.email_verified:
+    if homeowner is None or homeowner.role != Role.HOMEOWNER:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             "No homeowner account uses that email. Check the spelling, or record a wall and "

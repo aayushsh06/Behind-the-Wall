@@ -61,13 +61,14 @@ because SQLite and photos need a disk that survives restarts.
 | `BTW_DEMO_ACCOUNTS` | `false` for real use | create the two public demo logins on startup |
 | `PORT` | set by the host | port uvicorn listens on |
 | `BTW_PUBLIC_URL` | your site's address | base of invitation links |
-| `BTW_SMTP_HOST`, `BTW_SMTP_PORT`, `BTW_SMTP_USERNAME`, `BTW_SMTP_PASSWORD`, `BTW_SMTP_FROM` | **required for real use** | confirmation and invitation emails. Without them, confirmation links are only written to the server log (fine for local development) |
+| `BTW_SMTP_HOST`, `BTW_SMTP_PORT`, `BTW_SMTP_USERNAME`, `BTW_SMTP_PASSWORD`, `BTW_SMTP_FROM` | optional | email invitations; without them the tradesperson sends the link |
 
 ## Email
 
-Confirmation and invitation emails go out over SMTP. The project is set up for
-[Brevo](https://www.brevo.com/free-smtp-server/), whose free plan sends 300 emails a day
-and lets you send from a single verified address without owning a domain.
+Email is optional. Without it, a tradesperson sends an invitation from their own email app
+or by copying the link. To have the server email invitations, use SMTP; the project is set
+up for [Brevo](https://www.brevo.com/free-smtp-server/), whose free plan sends 300 emails a
+day and lets you send from a single verified address without owning a domain.
 
 1. Create a free Brevo account.
 2. **Senders, Domains & Dedicated IPs → Senders**: add and verify the address emails should
@@ -124,12 +125,6 @@ wall's revision, so the homeowner's PDF updates as soon as a tradesperson saves 
 invite; the wall waits for that email and moves into the homeowner's account when they sign
 up with it. The tradesperson then sends an invitation: emailed by the server when SMTP is
 configured, otherwise from their own email app or by copying the link.
-
-**Email confirmation.** New accounts are emailed a confirmation link (valid 48 hours) and
-can't reach any records until they open it. Walls sent to an email move into an account
-only once that email is confirmed, and an unconfirmed sign-up doesn't block the real owner
-of the address from registering it. Accounts that existed before this was added are
-treated as confirmed; the demo accounts are created confirmed.
 
 Records saved before accounts owned walls have no owner and are visible to no one.
 

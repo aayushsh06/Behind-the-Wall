@@ -3,7 +3,6 @@ import { Navigate, useLocation } from 'react-router-dom'
 
 import { routes } from '@/app/routes'
 import { ErrorMessage, Spinner } from '@/components/ui'
-import { CheckEmailPage } from '@/features/auth/EmailConfirmation'
 import { useCurrentUser } from '@/hooks/useAuth'
 
 /** Where to return after signing in. Passed along as router state. */
@@ -28,7 +27,6 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     const state: ReturnState = { from: location.pathname + location.search }
     return <Navigate to={routes.welcome()} replace state={state} />
   }
-  if (!user.data.email_verified) return <CheckEmailPage email={user.data.email} />
   return children
 }
 

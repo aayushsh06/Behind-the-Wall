@@ -1,6 +1,5 @@
 """FastAPI application factory."""
 
-import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -12,18 +11,11 @@ from app.core.database import SessionLocal, init_db
 from app.services.demo_accounts import ensure_demo_accounts
 from app.spa import mount_spa
 
-logger = logging.getLogger("behind_the_wall")
-
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     init_db()
     settings = get_settings()
-    if not (settings.smtp_host and settings.smtp_from):
-        logger.warning(
-            "BTW_SMTP_HOST/BTW_SMTP_FROM are not set: confirmation emails cannot be sent. "
-            "Confirmation links are written to this log instead. Set SMTP before real use."
-        )
     if settings.demo_accounts:
         with SessionLocal() as session:
             ensure_demo_accounts(session, settings)

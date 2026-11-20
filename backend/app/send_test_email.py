@@ -25,7 +25,7 @@ def main() -> int:
         mailer.send(
             to,
             "Behind the Wall email test",
-            "Email is set up correctly. Confirmation and invitation emails will be delivered.\n",
+            "Email is set up correctly. Invitation emails will be delivered.\n",
         )
     except MailError as exc:
         cause = exc.__cause__

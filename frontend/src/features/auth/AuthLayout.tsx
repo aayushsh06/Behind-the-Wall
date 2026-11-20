@@ -23,29 +23,22 @@ const YEAR = new Date().getFullYear()
 export function AuthLayout() {
   return (
     <PublicOnly>
-      <AuthChrome>
-        <Outlet />
-      </AuthChrome>
+      <div className="flex min-h-full flex-col">
+        <header className="border-b border-line bg-surface">
+          <div className="mx-auto flex h-14 max-w-6xl items-center px-4 sm:px-6">
+            <Link to={routes.welcome()} aria-label="Behind the Wall home">
+              <BrandMark />
+            </Link>
+          </div>
+        </header>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 md:py-14">
+          <Outlet />
+        </main>
+        <footer className="border-t border-line">
+          <p className="mx-auto max-w-6xl px-4 py-5 text-sm text-fg-faint sm:px-6">© {YEAR} Behind the Wall</p>
+        </footer>
+      </div>
     </PublicOnly>
-  )
-}
-
-/** Header, centered content, and footer shared by the signed-out screens. */
-export function AuthChrome({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex min-h-full flex-col">
-      <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex h-14 max-w-6xl items-center px-4 sm:px-6">
-          <Link to={routes.welcome()} aria-label="Behind the Wall home">
-            <BrandMark />
-          </Link>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 md:py-14">{children}</main>
-      <footer className="border-t border-line">
-        <p className="mx-auto max-w-6xl px-4 py-5 text-sm text-fg-faint sm:px-6">© {YEAR} Behind the Wall</p>
-      </footer>
-    </div>
   )
 }
 

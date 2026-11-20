@@ -10,8 +10,6 @@ def test_ensure_columns_adds_missing_column(tmp_path: Path) -> None:
     with engine.begin() as conn:
         conn.execute(text("CREATE TABLE walls (id TEXT PRIMARY KEY, room TEXT)"))
         conn.execute(text("CREATE TABLE photos (id TEXT PRIMARY KEY, width INTEGER)"))
-        conn.execute(text("CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT)"))
-        conn.execute(text("INSERT INTO users (id, email) VALUES ('u1', 'old@example.com')"))
 
     assert ensure_columns(engine) == [
         "walls.calibration",
@@ -21,12 +19,7 @@ def test_ensure_columns_adds_missing_column(tmp_path: Path) -> None:
         "walls.last_edited_by_id",
         "walls.revision",
         "photos.owner_id",
-        "users.email_verified_at",
     ]
-    with engine.begin() as conn:
-        # Accounts from before confirmation existed are treated as confirmed.
-        verified = conn.execute(text("SELECT email_verified_at FROM users")).scalar_one()
-    assert verified is not None
     revision = next(c for c in inspect(engine).get_columns("walls") if c["name"] == "revision")
     assert revision["nullable"] is False
     inspector = inspect(engine)

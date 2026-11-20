@@ -43,17 +43,12 @@ def ensure_demo_accounts(session: Session, settings: Settings) -> list[str]:
         user = users.get_by_email(account.email)
         if user is None:
             user = users.create(
-                email=account.email,
-                name=account.name,
-                role=account.role,
-                password=account.password,
-                verified=True,
+                email=account.email, name=account.name, role=account.role, password=account.password
             )
             created.append(account.email)
         elif (user.name, user.role) != (account.name, account.role):
             user.name, user.role = account.name, account.role
             session.commit()
-        users.mark_verified(user)
         accounts[account.role] = user
     homeowner, trade = accounts[Role.HOMEOWNER], accounts[Role.TRADESPERSON]
     if homeowner.email in created:

@@ -54,15 +54,3 @@ class UserRead(BaseModel):
     name: str
     email: str
     role: Role
-    # False until the account clicks the link in its confirmation email.
-    email_verified: bool
-
-
-class VerifyEmailRequest(BaseModel):
-    token: str = Field(min_length=10, max_length=200)
-
-
-class VerifyEmailResult(BaseModel):
-    email: str
-    # Walls that were waiting for this email and moved into the account.
-    walls_received: int
