@@ -176,7 +176,7 @@ export function MarkersStep({ draft, dispatch, submitting, submitError, submitLa
         <Button variant="secondary" onClick={onBack} disabled={submitting}>
           Back
         </Button>
-        <Button size="lg" fullWidth loading={submitting} disabled={incomplete.length > 0} onClick={onSubmit}>
+        <Button size="lg" variant="brand" fullWidth loading={submitting} disabled={incomplete.length > 0} onClick={onSubmit}>
           {submitLabel}
         </Button>
       </div>

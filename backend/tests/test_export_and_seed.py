@@ -178,3 +178,21 @@ def test_html_export_shows_computed_positions_and_lines(
     assert "5 ft 0 in from left, 4 ft 0 in above floor" in html
     assert "Horizontal run, 10 ft 0 in long" in html
     assert 'class="seg"' in html
+
+
+def test_sample_runs_use_snapped_routes_with_stable_ids() -> None:
+    from app.services.sample_paths import SNAPPED_RUNS
+    from app.services.seed_service import SAMPLE_WALLS, sample_markers
+
+    paths = 0
+    for wall in SAMPLE_WALLS:
+        markers = sample_markers(wall)
+        assert [m.id for m in markers] == [f"{wall.key}-{i}" for i in range(len(markers))]
+        for index, marker in enumerate(markers):
+            if (wall.key, index) in SNAPPED_RUNS:
+                assert marker.kind == "path" and len(marker.points) >= 2
+                assert (marker.x, marker.y) == (marker.points[0].x, marker.points[0].y)
+                paths += 1
+            if marker.type == "framing":
+                assert marker.kind == "line"  # studs really are straight
+    assert paths == len(SNAPPED_RUNS) > 5

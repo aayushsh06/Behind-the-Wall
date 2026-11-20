@@ -80,7 +80,7 @@ export function WelcomePage() {
           <div className="relative flex min-h-[600px] flex-col justify-end p-7 sm:p-12 md:min-h-[660px] md:justify-center md:p-16">
             <div className="max-w-xl">
               <h1 className="text-[42px] font-semibold leading-[1.02] tracking-[-0.035em] text-white sm:text-6xl lg:text-[76px]">
-                Know what’s behind the wall <span className="text-brand">before you cut.</span>
+                Know what’s behind the wall <span className="text-brand">before you start.</span>
               </h1>
               <p className="mt-6 max-w-lg text-base leading-relaxed text-white/75 sm:text-lg">
                 Tradespeople record the pipes, wiring, and framing they find while a wall is open. Homeowners keep

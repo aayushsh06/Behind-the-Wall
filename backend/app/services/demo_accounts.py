@@ -54,9 +54,10 @@ def ensure_demo_accounts(session: Session, settings: Settings) -> list[str]:
             session.commit()
         accounts[account.role] = user
     homeowner, trade = accounts[Role.HOMEOWNER], accounts[Role.TRADESPERSON]
-    # A new demo homeowner gets the whole sample home; an existing one only gets sample
-    # walls added since, so edits made during a demo are kept.
+    # A new demo homeowner gets the whole sample home. For an existing one, walls edited
+    # during a demo are kept; unedited sample walls pick up newer sample data, and sample
+    # walls added since are filled in.
     seed.seed_sample_home(
-        homeowner.id, tradesperson_id=trade.id, only_missing=homeowner.email not in created
+        homeowner.id, tradesperson_id=trade.id, keep_edited=homeowner.email not in created
     )
     return created

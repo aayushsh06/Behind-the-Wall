@@ -1,4 +1,3 @@
-export { Banner } from './Banner'
 export { BottomSheet } from './BottomSheet'
 export { Arrow, Button } from './Button'
 export { Chip } from './Chip'

@@ -16,7 +16,7 @@ export function WallListItem({ wall }: WallListItemProps) {
     <li className="min-w-0">
       <Link
         to={routes.wall(wall.id)}
-        className="group flex h-full flex-col overflow-hidden rounded-2xl bg-surface ring-1 ring-inset ring-line transition-shadow hover:shadow-lift"
+        className="group flex h-full flex-col overflow-hidden rounded-2xl bg-surface ring-1 ring-inset ring-line transition-[box-shadow,transform] duration-150 ease-out hover:shadow-card hover:ring-line-strong motion-safe:active:scale-[0.99]"
       >
         <div className="relative aspect-[16/10] overflow-hidden bg-surface-2">
           {wall.photo_id ? (
@@ -41,7 +41,7 @@ export function WallListItem({ wall }: WallListItemProps) {
             </p>
             <p className="eyebrow mt-2 text-fg-faint">{formatDate(wall.observed_date)}</p>
           </div>
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-fg transition-colors group-hover:bg-ink group-hover:text-white">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-fg transition-[background-color,color,transform] duration-150 group-hover:bg-ink group-hover:text-white motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5">
             <Arrow />
           </span>
         </div>

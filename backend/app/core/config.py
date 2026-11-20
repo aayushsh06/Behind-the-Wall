@@ -33,7 +33,9 @@ class Settings(BaseSettings):
 
     # Photos are resized so the longest edge is at most this many pixels.
     photo_max_edge: int = 1600
-    thumbnail_max_edge: int = 320
+    # Sharp on 2-3x phone screens at card size (cards are up to ~400 CSS px wide), also
+    # for portrait photos, whose width is the short edge.
+    thumbnail_max_edge: int = 1200
     photo_jpeg_quality: int = 85
     max_upload_bytes: int = 25 * 1024 * 1024
 

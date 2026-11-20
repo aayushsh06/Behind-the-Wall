@@ -57,3 +57,27 @@ def test_rewritten_photo_gets_new_etag(client: TestClient, uploaded_photo: dict)
     refreshed = client.get(url, headers={"If-None-Match": old_etag})
     assert refreshed.status_code == 200
     assert refreshed.headers["etag"] != old_etag
+
+
+def test_old_small_thumbnails_are_rebuilt_at_the_current_size(
+    client: TestClient, uploaded_photo: dict
+) -> None:
+    from io import BytesIO
+
+    from PIL import Image
+
+    from app.core.database import SessionLocal
+    from app.models import PhotoFile
+
+    with SessionLocal() as session:  # pretend an earlier version stored a 320 px thumbnail
+        row = session.get(PhotoFile, uploaded_photo["id"])
+        small = BytesIO()
+        Image.open(BytesIO(row.thumbnail)).resize((320, 213)).save(small, format="JPEG")
+        row.thumbnail = small.getvalue()
+        session.commit()
+
+    thumb = client.get(f"/api/photos/{uploaded_photo['id']}/thumbnail")
+    assert thumb.status_code == 200
+    from app.core.config import get_settings
+
+    assert max(Image.open(BytesIO(thumb.content)).size) == get_settings().thumbnail_max_edge

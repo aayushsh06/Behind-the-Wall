@@ -41,7 +41,6 @@ export function MarkerForm({ marker, position, onChange, onDelete, onDone }: Mar
       <TextField
         label={measurementRequired ? 'Measurement' : 'Measurement (optional)'}
         placeholder={marker.kind === 'point' ? '18 in above floor' : '1/2 in copper, runs to ceiling'}
-        autoFocus
         value={marker.measurement}
         onChange={(event) => onChange({ measurement: event.target.value })}
         error={canFinish ? undefined : 'Required so someone can find it later'}

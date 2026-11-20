@@ -31,9 +31,9 @@ export function BottomSheet({ open, title, onClose, children }: BottomSheetProps
       aria-modal="true"
       aria-label={title}
     >
-      <button type="button" aria-label="Close" className="absolute inset-0 bg-ink/50 backdrop-blur-[2px]" onClick={onClose} />
+      <button type="button" aria-label="Close" className="absolute inset-0 bg-ink/50 backdrop-blur-[2px] motion-safe:animate-[fade-in_160ms_ease-out]" onClick={onClose} />
       <div
-        className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-surface p-5 shadow-sheet sm:rounded-3xl sm:p-7"
+        className="relative max-h-[90dvh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-3xl bg-surface p-5 shadow-sheet motion-safe:animate-[sheet-up_220ms_cubic-bezier(0.2,0.8,0.2,1)] sm:rounded-3xl sm:p-7"
         style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
       >
         <div className="mb-4 flex items-start justify-between gap-4">

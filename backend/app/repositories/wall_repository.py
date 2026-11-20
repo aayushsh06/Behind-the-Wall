@@ -53,6 +53,10 @@ class WallRepository:
     def exists(self, wall_id: str) -> bool:
         return self._session.get(Wall, wall_id) is not None
 
+    def peek(self, wall_id: str) -> Wall | None:
+        """Any wall by id, regardless of who can see it (seed maintenance only)."""
+        return self._session.get(Wall, wall_id)
+
     def photo_visible_to(self, photo_id: str, viewer: Viewer) -> bool:
         """True when the photo is on a wall the account can reach."""
         stmt = select(Wall.id).where(Wall.photo_id == photo_id, _visible_to(viewer)).limit(1)

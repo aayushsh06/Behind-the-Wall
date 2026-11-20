@@ -59,7 +59,7 @@ export function PhotoStep({ photo, onPhoto, onClear, onNext }: PhotoStepProps) {
         </Button>
       ) : null}
 
-      <Button variant={photo ? 'primary' : 'secondary'} size="lg" fullWidth onClick={onNext} disabled={upload.isPending}>
+      <Button variant={photo ? 'brand' : 'secondary'} size="lg" fullWidth onClick={onNext} disabled={upload.isPending}>
         {photo ? 'Next: details' : 'Skip photo'}
       </Button>
     </div>

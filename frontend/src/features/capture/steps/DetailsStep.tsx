@@ -156,7 +156,7 @@ export function DetailsStep({ draft, dispatch, knownRooms, destination, onBack, 
         <Button variant="secondary" onClick={onBack}>
           Back
         </Button>
-        <Button size="lg" fullWidth onClick={handleNext}>
+        <Button size="lg" variant="brand" fullWidth onClick={handleNext}>
           {draft.coverage === 'none' ? 'Next: notes' : 'Next: mark items'}
         </Button>
       </div>

@@ -27,7 +27,7 @@ export function EditWallPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title="Edit wall" subtitle={`${wall.room} · ${wall.label}`} backTo={routes.wall(wall.id)} />
+      <PageHeader title="Edit wall" subtitle={`${wall.room} · ${wall.label}`} backTo={routes.wall(wall.id)} backLabel={wall.label} />
       <WallForm
         initialDraft={draftFromWall(wall, (id) => photosApi.url(id, wall.updated_at), size)}
         knownRooms={knownRooms}

@@ -87,9 +87,23 @@ class PhotoStorage:
     def read_thumbnail(self, photo_id: str) -> bytes | None:
         row = self._session.get(PhotoFile, photo_id)
         if row is not None:
+            if self._thumbnail_too_small(row):
+                # Made by an earlier version with smaller thumbnails: rebuild it once.
+                row.thumbnail = self.process_thumbnail(row.data).data
+                self._session.commit()
             return row.thumbnail
         legacy = self._legacy_path(photo_id, thumbnail=True)
         return legacy.read_bytes() if legacy.is_file() else self.read(photo_id)
+
+    def _thumbnail_too_small(self, row: PhotoFile) -> bool:
+        """True when the stored thumbnail is smaller than both the target and the photo."""
+        try:
+            thumb = Image.open(BytesIO(row.thumbnail))
+            full = Image.open(BytesIO(row.data))
+        except (UnidentifiedImageError, OSError):
+            return False
+        target = min(self._settings.thumbnail_max_edge, max(full.size))
+        return max(thumb.size) < target
 
     def delete(self, photo_id: str) -> None:
         row = self._session.get(PhotoFile, photo_id)

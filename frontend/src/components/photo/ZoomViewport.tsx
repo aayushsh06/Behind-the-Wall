@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent, ReactNode } from 'react'
 
 import type { PinchStart, View, XY } from '@/components/photo/zoom'
@@ -33,6 +33,37 @@ export function ZoomViewport({ drawing = false, children }: ZoomViewportProps) {
   const [pinching, setPinching] = useState(false)
   const pointers = useRef(new Map<number, XY>())
   const pinch = useRef<PinchStart | null>(null)
+  const zoomed = view.scale > 1
+
+  // iOS Safari doesn't always honour touch-action, so also stop the browser's own touch
+  // handling here: two fingers on the photo never zoom or scroll the page, and while
+  // drawing or zoomed in, one finger belongs to the photo too (no page scroll, no
+  // rubber-band bounce or edge swipe).
+  useEffect(() => {
+    const element = ref.current
+    if (!element) return
+    const block = (event: TouchEvent) => {
+      if (event.touches.length > 1 || drawing || zoomed) event.preventDefault()
+    }
+    element.addEventListener('touchstart', block, { passive: false })
+    element.addEventListener('touchmove', block, { passive: false })
+    return () => {
+      element.removeEventListener('touchstart', block)
+      element.removeEventListener('touchmove', block)
+    }
+  }, [drawing, zoomed])
+
+  // While two fingers are down, keep the page itself from moving underneath.
+  useEffect(() => {
+    if (!pinching) return
+    const { overflow, overscrollBehavior } = document.documentElement.style
+    document.documentElement.style.overflow = 'hidden'
+    document.documentElement.style.overscrollBehavior = 'none'
+    return () => {
+      document.documentElement.style.overflow = overflow
+      document.documentElement.style.overscrollBehavior = overscrollBehavior
+    }
+  }, [pinching])
 
   const size = () => {
     const rect = ref.current?.getBoundingClientRect()
@@ -94,7 +125,7 @@ export function ZoomViewport({ drawing = false, children }: ZoomViewportProps) {
         onPointerMoveCapture={onPointerMoveCapture}
         onPointerUpCapture={onPointerEndCapture}
         onPointerCancelCapture={onPointerEndCapture}
-        className={cn('overflow-hidden rounded-2xl', drawing || view.scale > 1 ? 'touch-none' : 'touch-pan-y')}
+        className={cn('overflow-hidden overscroll-contain rounded-2xl', drawing || zoomed ? 'touch-none' : 'touch-pan-y')}
       >
         <div style={contentStyle}>{children({ zoom: view.scale, pinching })}</div>
       </div>

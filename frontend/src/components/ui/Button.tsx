@@ -56,7 +56,9 @@ export function Button({
       disabled={disabled || loading}
       className={cn(
         'inline-flex items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap',
-        'transition-colors duration-150 disabled:cursor-not-allowed select-none',
+        'transition-[background-color,color,box-shadow,transform] duration-150 ease-out disabled:cursor-not-allowed select-none',
+        // A gentle press: shrinks slightly while held (skipped when motion is reduced).
+        'motion-safe:active:scale-[0.97] motion-safe:disabled:active:scale-100',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
         VARIANT_CLASSES[variant],
         SIZE_CLASSES[size],

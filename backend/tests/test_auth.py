@@ -137,17 +137,21 @@ def test_demo_accounts_are_created_once_and_load_the_sample_home(tmp_path: Path)
         # The homeowner reads the whole sample home; the tradesperson recorded all of it.
         assert visible == {"homeowner": 11, "tradesperson": 11}
 
-        # Sample walls added in a later version are filled in for existing demo accounts,
-        # without touching walls that are already there.
+        # On the next start: walls edited during a demo are kept, unedited sample walls
+        # with outdated data are refreshed, and missing sample walls are filled in.
         owner = UserRepository(session).get_by_email(DEMO_ACCOUNTS[0].email)
-        kept = WallRepository(session).list(Viewer(owner.id))[0]
-        kept.notes = "Edited during a demo"
-        newest = next(w for w in WallRepository(session).list(Viewer(owner.id)) if w.id != kept.id)
-        session.delete(newest)
+        sample = WallRepository(session).list(Viewer(owner.id))
+        kept, stale, missing = sample[0], sample[1], sample[2]
+        kept.notes, kept.revision = "Edited during a demo", 2
+        current_markers = stale.markers
+        stale.markers = [{**m, "kind": "point", "points": None} for m in stale.markers]
+        session.delete(missing)
         session.commit()
         ensure_demo_accounts(session, settings)
         walls = {w.id: w for w in WallRepository(session).list(Viewer(owner.id))}
-        assert len(walls) == 11 and walls[kept.id].notes == "Edited during a demo"
+        assert len(walls) == 11
+        assert walls[kept.id].notes == "Edited during a demo"
+        assert walls[stale.id].markers == current_markers
         assert ensure_demo_accounts(session, settings) == []
 
         # A renamed demo account is put back the next time the app starts.

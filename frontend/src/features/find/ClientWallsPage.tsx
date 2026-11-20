@@ -35,6 +35,7 @@ export function ClientWallsPage() {
         title={client.name}
         subtitle={`${client.pending ? 'Invited, hasn’t signed up yet' : client.email} · ${mine!.length} ${mine!.length === 1 ? 'wall' : 'walls'} in ${roomCount} ${roomCount === 1 ? 'room' : 'rooms'}`}
         backTo={routes.home()}
+        backLabel="Clients"
         action={
           <Link to={routes.newWall(client.email)} className="hidden md:block">
             <Button variant="secondary" arrow>

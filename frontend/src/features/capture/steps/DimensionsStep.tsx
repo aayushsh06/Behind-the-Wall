@@ -28,7 +28,7 @@ export function DimensionsStep({ draft, dispatch, onBack, onNext }: DimensionsSt
         <InfoBox>Add a photo first to record the wall size.</InfoBox>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={onBack}>Back</Button>
-          <Button size="lg" fullWidth onClick={onNext}>Next: details</Button>
+          <Button size="lg" variant="brand" fullWidth onClick={onNext}>Next: details</Button>
         </div>
       </div>
     )
@@ -75,7 +75,7 @@ export function DimensionsStep({ draft, dispatch, onBack, onNext }: DimensionsSt
 
       <div className="flex gap-2">
         <Button variant="secondary" onClick={onBack}>Back</Button>
-        <Button size="lg" fullWidth onClick={onNext} disabled={Boolean(error)}>
+        <Button size="lg" variant="brand" fullWidth onClick={onNext} disabled={Boolean(error)}>
           Next: details
         </Button>
       </div>

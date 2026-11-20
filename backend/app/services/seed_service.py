@@ -30,6 +30,7 @@ from app.schemas import (
     WallCreate,
 )
 from app.services.photo_storage import JPEG_CONTENT_TYPE, PhotoStorage
+from app.services.sample_paths import SNAPPED_RUNS
 
 SAMPLE_ASSETS_DIR = Path(__file__).resolve().parent.parent.parent / "assets" / "sample"
 SAMPLE_PREFIX = "sample"
@@ -411,18 +412,25 @@ class SeedService:
         self._storage = storage
 
     def seed_sample_home(
-        self, owner_id: str, tradesperson_id: str, *, only_missing: bool = False
+        self, owner_id: str, tradesperson_id: str, *, keep_edited: bool = False
     ) -> list[str]:
         """Create or refresh a homeowner's sample walls and photos. Returns the wall IDs.
 
         Every wall is recorded as added by ``tradesperson_id``, so that account sees them
-        under this homeowner as a client. With ``only_missing`` existing sample walls are
-        left untouched (keeping any edits) and only new ones are added.
+        under this homeowner as a client. With ``keep_edited``, sample walls someone has
+        edited (revision above 1) are left alone, unedited ones are refreshed only if the
+        sample data changed, and missing ones are added.
         """
         ids: list[str] = []
         for sample in SAMPLE_WALLS:
-            if only_missing and self._walls.exists(sample.wall_id(owner_id)):
-                continue
+            markers = sample_markers(sample)
+            if keep_edited:
+                existing = self._walls.peek(sample.wall_id(owner_id))
+                if existing is not None and (
+                    existing.revision > 1
+                    or existing.markers == [m.model_dump(mode="json") for m in markers]
+                ):
+                    continue
             created_by_id = tradesperson_id
             photo_id = self._write_photo(sample, created_by_id) if sample.photo else None
             data = WallCreate(
@@ -435,7 +443,7 @@ class SeedService:
                 uncovered_region=sample.uncovered_region,
                 photo_id=photo_id,
                 calibration=sample.calibration if photo_id else None,
-                markers=list(sample.markers),
+                markers=markers,
                 notes=sample.notes,
             )
             wall = self._walls.upsert(
@@ -458,6 +466,31 @@ class SeedService:
             size_bytes=len(processed.data),
         )
         return photo_id
+
+
+def sample_markers(sample: SampleWall) -> list[Marker]:
+    """The wall's markers with stable ids, cable and pipe runs as their snapped routes."""
+    out: list[Marker] = []
+    for index, marker in enumerate(sample.markers):
+        stable_id = f"{sample.key}-{index}"
+        route = SNAPPED_RUNS.get((sample.key, index))
+        if route is None:
+            out.append(marker.model_copy(update={"id": stable_id}))
+            continue
+        out.append(
+            Marker(
+                id=stable_id,
+                type=marker.type,
+                kind=MarkerKind.PATH,
+                x=route[0][0],
+                y=route[0][1],
+                points=[Point(x=x, y=y) for x, y in route],
+                measurement=marker.measurement,
+                reference_point=marker.reference_point,
+                note=marker.note,
+            )
+        )
+    return out
 
 
 def load_sample_image(photo: SamplePhoto) -> bytes:

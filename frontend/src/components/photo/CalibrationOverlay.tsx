@@ -31,11 +31,12 @@ export function CalibrationOverlay({ calibration, editable, surfaceRef, onMoveCo
             height: `${(br.y - tl.y) * 100}%`,
           }}
         >
-          <span className="absolute left-1/2 top-1 -translate-x-1/2 rounded-full bg-ink/80 px-2 py-0.5 text-[11px] font-semibold text-white">
-            {formatLength(calibration.width, calibration.unit)} wide
-          </span>
-          <span className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-ink/80 px-2 py-0.5 text-[11px] font-semibold text-white">
-            {formatLength(calibration.height, calibration.unit)} high
+          {/* One label just inside the top edge (width × height), clear of most runs. */}
+          <span
+            className="absolute left-1/2 top-1.5 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink/85 px-2 py-0.5 text-[11px] font-semibold text-white"
+            style={{ scale: 'var(--photo-unzoom, 1)' }}
+          >
+            {formatLength(calibration.width, calibration.unit)} × {formatLength(calibration.height, calibration.unit)}
           </span>
         </div>
       ) : null}

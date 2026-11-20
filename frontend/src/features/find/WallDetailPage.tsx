@@ -6,7 +6,6 @@ import { routes } from '@/app/routes'
 import { ErrorMessage, PageHeader, SectionHeading, Spinner } from '@/components/ui'
 import { describeWallSize } from '@/domain/geometry'
 import type { Wall } from '@/domain/types'
-import { CoverageBanner } from '@/features/find/CoverageBanner'
 import { MarkerList } from '@/features/find/MarkerList'
 import { WallActions } from '@/features/find/WallActions'
 import { WallPhoto } from '@/features/find/WallPhoto'
@@ -35,8 +34,8 @@ export function WallDetailPage() {
     <>
       <PageHeader
         title={wall.label}
-        subtitle={`${wall.room} · Recorded by ${wall.author} · ${formatDate(wall.observed_date)}`}
         backTo={readOnly ? routes.home() : routes.client(clientOf(wall)?.id ?? '')}
+        backLabel={readOnly ? 'All walls' : (clientOf(wall)?.name ?? 'Back')}
         action={
           <WallActions
             wallId={wall.id}
@@ -48,7 +47,7 @@ export function WallDetailPage() {
         }
       />
 
-      <RecordContext wall={wall} viewerId={user.id} />
+      <WallFacts wall={wall} viewerId={user.id} />
 
       {wall.pending_owner_email && wall.created_by?.id === user.id ? (
         <div className="mb-6">
@@ -73,7 +72,6 @@ export function WallDetailPage() {
         }
       >
         <div className="flex flex-col gap-4">
-          <CoverageBanner coverage={wall.coverage} note={wall.coverage_note} />
           {wall.photo_id ? (
             <WallPhoto
               photoId={wall.photo_id}
@@ -90,11 +88,7 @@ export function WallDetailPage() {
 
         <div className="flex flex-col gap-6">
           <section>
-            <SectionHeading
-              aside={wall.calibration ? `Wall ${describeWallSize(wall.calibration)}` : 'Wall size not recorded'}
-            >
-              Items ({wall.markers.length})
-            </SectionHeading>
+            <SectionHeading>Items ({wall.markers.length})</SectionHeading>
             <MarkerList
               markers={wall.markers}
               calibration={wall.calibration}
@@ -122,32 +116,61 @@ export function WallDetailPage() {
   )
 }
 
-/** Whose home, who added it, and which revision this is. */
-function RecordContext({ wall, viewerId }: { wall: Wall; viewerId: string }) {
-  const lines: React.ReactNode[] = []
+const COVERAGE: Record<Wall['coverage'], { value: string; hatch: boolean }> = {
+  full: { value: 'Whole wall', hatch: false },
+  partial: { value: 'Part of the wall. The hatched area wasn’t opened.', hatch: true },
+  none: { value: 'Not opened. Treat the whole wall as unknown.', hatch: true },
+}
+
+/** Everything known about the record, as a labelled list rather than one wrapping line. */
+function WallFacts({ wall, viewerId }: { wall: Wall; viewerId: string }) {
+  const coverage = COVERAGE[wall.coverage]
+  const facts: { label: string; value: React.ReactNode; wide?: boolean }[] = [
+    { label: 'Room', value: wall.room },
+    { label: 'Recorded by', value: wall.author },
+    { label: 'Observed', value: formatDate(wall.observed_date) },
+  ]
   if (wall.owner && wall.owner.id !== viewerId) {
-    lines.push(
-      <>
-        In <span className="font-medium text-fg">{wall.owner.name}</span>’s account ({wall.owner.email})
-      </>,
-    )
+    facts.push({ label: 'Homeowner', value: `${wall.owner.name} (${wall.owner.email})`, wide: true })
+  } else if (!wall.owner && wall.pending_owner_email) {
+    facts.push({ label: 'Homeowner', value: `${wall.pending_owner_email} (invited)`, wide: true })
   }
   if (wall.owner?.id === viewerId && wall.created_by) {
-    lines.push(
-      <>
-        Added to your account by <span className="font-medium text-fg">{wall.created_by.name}</span> (
-        {wall.created_by.email})
-      </>,
-    )
+    facts.push({ label: 'Added by', value: `${wall.created_by.name} (${wall.created_by.email})`, wide: true })
   }
-  const editor = wall.last_edited_by ? ` by ${wall.last_edited_by.name}` : ''
-  lines.push(`Revision ${wall.revision} · Updated ${formatTimestamp(wall.updated_at)}${editor}`)
+  facts.push({
+    label: 'Wall size',
+    value: wall.calibration ? describeWallSize(wall.calibration) : 'Not recorded',
+  })
+  facts.push({
+    label: 'Revision',
+    value: `${wall.revision} · ${formatTimestamp(wall.updated_at)}${wall.last_edited_by ? ` by ${wall.last_edited_by.name}` : ''}`,
+    wide: true,
+  })
+  facts.push({
+    label: 'Inspected',
+    wide: true,
+    value: (
+      <span className="flex items-start gap-2">
+        {coverage.hatch ? (
+          <span aria-hidden="true" className="hatch mt-0.5 inline-block size-4 shrink-0 rounded-sm ring-1 ring-inset ring-amber-300" />
+        ) : null}
+        <span>
+          {coverage.value}
+          {wall.coverage_note ? <span className="block text-fg-muted">{wall.coverage_note}</span> : null}
+        </span>
+      </span>
+    ),
+  })
 
   return (
-    <div className="-mt-3 mb-5 flex flex-col gap-0.5 text-sm text-fg-muted">
-      {lines.map((line, index) => (
-        <p key={index}>{line}</p>
+    <dl className="-mt-2 mb-8 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-line py-5 sm:grid-cols-3 lg:grid-cols-4">
+      {facts.map((fact) => (
+        <div key={fact.label} className={fact.wide ? 'col-span-2 sm:col-span-1' : undefined}>
+          <dt className="text-[13px] text-fg-faint">{fact.label}</dt>
+          <dd className="mt-0.5 break-words text-[15px] font-medium">{fact.value}</dd>
+        </div>
       ))}
-    </div>
+    </dl>
   )
 }

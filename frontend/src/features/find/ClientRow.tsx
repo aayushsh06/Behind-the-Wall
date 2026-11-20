@@ -21,7 +21,7 @@ export function ClientRow({ client, rooms, wallCount, updatedAt, previews }: Cli
     <li className="min-w-0">
       <Link
         to={routes.client(client.id)}
-        className="group flex items-center gap-4 rounded-2xl bg-surface p-4 ring-1 ring-inset ring-line transition-shadow hover:shadow-lift sm:p-5"
+        className="group flex items-center gap-4 rounded-2xl bg-surface p-4 ring-1 ring-inset ring-line transition-[box-shadow,transform] duration-150 ease-out hover:shadow-card hover:ring-line-strong motion-safe:active:scale-[0.99] sm:p-5"
       >
         <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-bold text-ink ring-1 ring-inset ring-brand/40">
           {initials(client.name) || '•'}
