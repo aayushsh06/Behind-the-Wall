@@ -30,6 +30,13 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   return children
 }
 
+/** Recording and editing screens. Homeowner accounts are read-only and go back to their walls. */
+export function TradespersonOnly({ children }: { children: ReactNode }) {
+  const user = useCurrentUser()
+  if (user.data?.role !== 'tradesperson') return <Navigate to={routes.home()} replace />
+  return children
+}
+
 /**
  * Welcome, sign-in and create-account screens. Once signed in (including right after
  * signing in here) the user goes back to the page that sent them, or to their walls.

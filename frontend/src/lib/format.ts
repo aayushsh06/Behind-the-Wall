@@ -24,3 +24,9 @@ export function slugify(text: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 }
+
+/** Format a full ISO timestamp as a local date, e.g. "Nov 19, 2026". */
+export function formatTimestamp(iso: string): string {
+  const date = new Date(iso.endsWith('Z') || /[+-]\d\d:\d\d$/.test(iso) ? iso : `${iso}Z`)
+  return Number.isNaN(date.getTime()) ? iso : DATE_FORMAT.format(date)
+}

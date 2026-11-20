@@ -67,15 +67,39 @@ export interface WallInput {
   calibration: WallCalibration | null
   markers: MarkerInput[]
   notes: string
+  /** When creating: the homeowner whose account receives the wall. */
+  homeowner_email?: string
+  /** When creating for an email with no account yet: hold the wall and invite them. */
+  invite?: boolean
 }
 
 /** A marker before the server assigns an id (id is optional on input). */
 export type MarkerInput = Omit<Marker, 'id'> & { id?: string }
 
-export interface Wall extends Omit<WallInput, 'markers'> {
+/** The homeowner a wall belongs to, or the account that recorded it. */
+export interface AccountBrief {
+  id: string
+  name: string
+  email: string
+  role: Role
+}
+
+export interface Wall extends Omit<WallInput, 'markers' | 'homeowner_email' | 'invite'> {
   id: string
   schema_version: number
   markers: Marker[]
+  /** Counts saves; each edit produces a newer PDF. */
+  revision: number
+  /** The homeowner whose account holds the wall; null while an invite is pending. */
+  owner: AccountBrief | null
+  /** Email of an invited homeowner who hasn't signed up yet. */
+  pending_owner_email: string | null
+  /** The tradesperson who recorded it. */
+  created_by: AccountBrief | null
+  last_edited_by: AccountBrief | null
+  /** What the signed-in account may do with this wall. */
+  can_edit: boolean
+  can_delete: boolean
   created_at: string
   updated_at: string
 }
@@ -89,6 +113,10 @@ export interface WallSummary {
   coverage: Coverage
   photo_id: string | null
   marker_count: number
+  revision: number
+  owner: AccountBrief | null
+  pending_owner_email: string | null
+  created_by: AccountBrief | null
   updated_at: string
 }
 
@@ -101,7 +129,11 @@ export interface Photo {
   created_at: string
 }
 
-/** Labels the account; it does not change what the account can do. */
+/**
+ * Homeowners read every wall in their account (read-only). Tradespeople record walls into
+ * a homeowner's account by email and edit the walls they recorded, or every wall in a
+ * home whose owner approved their access request.
+ */
 export type Role = 'homeowner' | 'tradesperson'
 
 export interface User {
@@ -109,4 +141,27 @@ export interface User {
   name: string
   email: string
   role: Role
+}
+
+export type AccessStatus = 'pending' | 'approved' | 'declined' | 'revoked'
+
+/** A tradesperson's request to edit a homeowner's walls, and its outcome. */
+export interface AccessGrant {
+  id: string
+  status: AccessStatus
+  message: string
+  created_at: string
+  decided_at: string | null
+  homeowner: AccountBrief
+  tradesperson: AccountBrief
+}
+
+export type HomeownerStatus = 'registered' | 'not_registered' | 'not_a_homeowner'
+
+export interface InviteResult {
+  email: string
+  invite_url: string
+  /** True when the server emailed it; otherwise the tradesperson sends invite_url. */
+  emailed: boolean
+  detail: string
 }

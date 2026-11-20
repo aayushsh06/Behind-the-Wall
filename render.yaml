@@ -1,0 +1,35 @@
+# Render Blueprint: Dashboard -> New -> Blueprint -> pick this repository.
+# A persistent disk requires a paid instance type (Starter or above).
+services:
+  - type: web
+    name: behind-the-wall
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: BTW_DATA_DIR
+        value: /data
+      - key: BTW_SESSION_COOKIE_SECURE
+        value: "true"
+      - key: BTW_DEMO_ACCOUNTS
+        value: "true"
+      # Public address used in invitation links, e.g. https://behind-the-wall.onrender.com
+      - key: BTW_PUBLIC_URL
+        sync: false
+      # Optional: send invitation emails through Brevo's free plan (300 emails/day).
+      # Without the secrets below, tradespeople send the invitation link from their own
+      # email app. See "Email" in README.md.
+      - key: BTW_SMTP_HOST
+        value: smtp-relay.brevo.com
+      - key: BTW_SMTP_PORT
+        value: "587"
+      - key: BTW_SMTP_USERNAME
+        sync: false
+      - key: BTW_SMTP_PASSWORD
+        sync: false
+      - key: BTW_SMTP_FROM
+        sync: false
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1

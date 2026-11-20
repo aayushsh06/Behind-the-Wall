@@ -1,8 +1,9 @@
 """Demo logins for usability sessions and the prototype demo video.
 
 On startup each missing demo account is created, and existing ones get their name and
-role reset. The first time they are created on an empty database, the sample home is
-loaded too, so signing in shows walls straight away.
+role reset. When the demo homeowner is created it gets the sample home, recorded by the
+demo tradesperson, so both logins show walls straight away: the homeowner reads all
+six, and the tradesperson sees them under that homeowner as a client.
 """
 
 from dataclasses import dataclass
@@ -35,18 +36,21 @@ DEMO_ACCOUNTS: tuple[DemoAccount, ...] = (
 def ensure_demo_accounts(session: Session, settings: Settings) -> list[str]:
     """Create any missing demo accounts. Returns the emails that were created."""
     users = UserRepository(session)
+    seed = SeedService(WallRepository(session), PhotoRepository(session), PhotoStorage(settings))
     created: list[str] = []
+    accounts = {}
     for account in DEMO_ACCOUNTS:
         user = users.get_by_email(account.email)
         if user is None:
-            users.create(
+            user = users.create(
                 email=account.email, name=account.name, role=account.role, password=account.password
             )
             created.append(account.email)
         elif (user.name, user.role) != (account.name, account.role):
             user.name, user.role = account.name, account.role
             session.commit()
-    walls = WallRepository(session)
-    if created and not walls.list():
-        SeedService(walls, PhotoRepository(session), PhotoStorage(settings)).seed_sample_home()
+        accounts[account.role] = user
+    homeowner, trade = accounts[Role.HOMEOWNER], accounts[Role.TRADESPERSON]
+    if homeowner.email in created:
+        seed.seed_sample_home(homeowner.id, tradesperson_id=trade.id)
     return created

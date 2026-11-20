@@ -2,29 +2,56 @@ import { Link } from 'react-router-dom'
 
 import { routes } from '@/app/routes'
 import { Button, EmptyState, ErrorMessage, PageHeader, Spinner } from '@/components/ui'
+import { ClientGroup } from '@/features/find/ClientGroup'
 import { RoomGroup } from '@/features/find/RoomGroup'
 import { WallSearch } from '@/features/find/WallSearch'
 import { useWallSearch } from '@/features/find/useWallSearch'
+import { useAccessRequests } from '@/hooks/useAccess'
 import { useSignedInUser } from '@/hooks/useAuth'
-import { useSeedSampleHome } from '@/hooks/useSeedSampleHome'
 import { useWalls } from '@/hooks/useWalls'
 
-const SUBTITLE = {
-  homeowner: 'Find a wall in your home to see what is behind it',
-  tradesperson: 'Find a wall you recorded, or record a new one',
+const COPY = {
+  homeowner: {
+    title: 'Walls',
+    subtitle: 'Every wall recorded in your home, by room. Open one to see its PDF.',
+    search: 'Search by room or wall',
+    emptyTitle: 'No walls recorded yet',
+    emptyBody:
+      'When a tradesperson records a wall in your home, it appears here as a PDF you can open any time. Give them the email address you signed up with.',
+  },
+  tradesperson: {
+    title: 'Clients',
+    subtitle: 'Homeowners you’ve recorded walls for, and the walls you recorded',
+    search: 'Search by client, room, or wall',
+    emptyTitle: 'No walls recorded yet',
+    emptyBody: 'Record a wall while it’s open and add it to the homeowner’s account using their email address.',
+  },
 } as const
 
 export function WallListPage() {
   const user = useSignedInUser()
   const wallsQuery = useWalls()
-  const seed = useSeedSampleHome()
-  const { query, setQuery, groups } = useWallSearch(wallsQuery.data)
+  const { query, setQuery, groups, clients } = useWallSearch(wallsQuery.data)
+  const isTrade = user.role === 'tradesperson'
+  const copy = COPY[user.role]
+  const hasResults = isTrade ? clients.length > 0 : groups.length > 0
 
   return (
     <>
-      <PageHeader title="Walls" subtitle={SUBTITLE[user.role]} />
-      <div className="mb-5">
-        <WallSearch value={query} onChange={setQuery} />
+      <PageHeader
+        title={copy.title}
+        subtitle={copy.subtitle}
+        action={
+          isTrade ? (
+            <Link to={routes.newWall()} className="hidden md:block">
+              <Button>Record a wall</Button>
+            </Link>
+          ) : undefined
+        }
+      />
+      {isTrade ? null : <PendingAccessNotice />}
+      <div className="mb-6 max-w-md">
+        <WallSearch value={query} onChange={setQuery} placeholder={copy.search} />
       </div>
 
       {wallsQuery.isPending ? <Spinner label="Loading walls" /> : null}
@@ -32,31 +59,56 @@ export function WallListPage() {
 
       {wallsQuery.isSuccess && wallsQuery.data.length === 0 ? (
         <EmptyState
-          title="No walls recorded yet"
-          description="Record a wall when it is open, or load the sample home to explore."
+          title={copy.emptyTitle}
+          description={copy.emptyBody}
           action={
-            <div className="flex flex-col gap-2">
-              <Link to={routes.newWall()}>
+            isTrade ? (
+              <Link to={routes.newWall()} className="w-full max-w-xs">
                 <Button fullWidth>Record a wall</Button>
               </Link>
-              <Button variant="secondary" loading={seed.isPending} onClick={() => seed.mutate()}>
-                Load sample home
-              </Button>
-              {seed.isError ? <ErrorMessage error={seed.error} /> : null}
-            </div>
+            ) : (
+              <p className="text-sm font-medium text-fg">{user.email}</p>
+            )
           }
         />
       ) : null}
 
-      {wallsQuery.isSuccess && wallsQuery.data.length > 0 && groups.length === 0 ? (
-        <EmptyState title="No walls match" description={`Nothing matches “${query}”.`} />
+      {wallsQuery.isSuccess && wallsQuery.data.length > 0 && !hasResults ? (
+        <EmptyState title="No matches" description={`Nothing matches “${query}”.`} />
       ) : null}
 
-      <div className="flex flex-col gap-6">
-        {groups.map((group) => (
-          <RoomGroup key={group.room} {...group} />
-        ))}
-      </div>
+      {isTrade ? (
+        <div className="flex flex-col gap-6">
+          {clients.map((group) => (
+            <ClientGroup key={group.client.id} {...group} />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-8">
+          {groups.map((group) => (
+            <RoomGroup key={group.room} {...group} />
+          ))}
+        </div>
+      )}
     </>
+  )
+}
+
+/** Tells a homeowner that a tradesperson is waiting for edit access. */
+function PendingAccessNotice() {
+  const requests = useAccessRequests()
+  const pending = requests.data?.filter((g) => g.status === 'pending') ?? []
+  if (pending.length === 0) return null
+  const names = pending.map((g) => g.tradesperson.name).join(', ')
+  return (
+    <div className="mb-6 flex flex-col gap-3 rounded-md border border-amber-200 border-l-4 border-l-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+      <p>
+        <span className="font-semibold">{names}</span> {pending.length === 1 ? 'is' : 'are'} asking for access to
+        correct walls in your home.
+      </p>
+      <Link to={`${routes.settings()}#access`} className="shrink-0">
+        <Button variant="secondary">Review</Button>
+      </Link>
+    </div>
   )
 }

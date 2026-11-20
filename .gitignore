@@ -6,6 +6,9 @@ __pycache__/
 .ruff_cache/
 backend/data/
 
+# Local secrets (SMTP password etc.); see backend/.env.example
+.env
+
 # Node
 node_modules/
 frontend/dist/

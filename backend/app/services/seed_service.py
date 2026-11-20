@@ -1,13 +1,15 @@
 """Populate the database with a sample home of six labeled walls.
 
-Photos come from ``backend/assets/sample``. Seed walls use fixed IDs and the photos
-are re-written on every run, so loading the sample home twice refreshes rather than
-duplicates, and swapping an asset file takes effect on the next load.
+Photos come from ``backend/assets/sample``. Each account gets its own copy of the
+sample home: wall and photo IDs are derived from the account and the sample key, and
+the photos are re-written on every run, so loading the sample home twice refreshes
+rather than duplicates, and swapping an asset file takes effect on the next load.
 
 Marker coordinates and calibration corners are hand-placed on real features in each
 photo. Two walls share one photo through different crops.
 """
 
+import hashlib
 from dataclasses import dataclass
 from datetime import date
 from io import BytesIO
@@ -60,13 +62,17 @@ class SampleWall:
     markers: tuple[Marker, ...] = ()
     notes: str = ""
 
-    @property
-    def wall_id(self) -> str:
-        return f"{SAMPLE_PREFIX}{self.key:0>26}"[:32]
+    def wall_id(self, owner_id: str) -> str:
+        return _sample_id("w", owner_id, self.key)
 
-    @property
-    def photo_id(self) -> str:
-        return f"{SAMPLE_PREFIX}photo{self.key:0>21}"[:32]
+    def photo_id(self, owner_id: str) -> str:
+        return _sample_id("p", owner_id, self.key)
+
+
+def _sample_id(kind: str, owner_id: str, key: str) -> str:
+    """Stable 32-character id, unique per account, so each account has its own copy."""
+    digest = hashlib.sha256(f"{kind}:{owner_id}:{key}".encode()).hexdigest()
+    return f"{SAMPLE_PREFIX}{digest}"[:32]
 
 
 def _point(kind: UtilityType, x: float, y: float, text: str, ref: str, note: str = "") -> Marker:
@@ -227,7 +233,7 @@ SAMPLE_WALLS: tuple[SampleWall, ...] = (
         key="living-tv",
         room="Living Room",
         label="TV wall",
-        author="Homeowner",
+        author="Carpenter",
         observed_date=date(2025, 8, 2),
         coverage=Coverage.PARTIAL,
         photo=SamplePhoto(asset="framed-partition.png"),
@@ -255,7 +261,7 @@ SAMPLE_WALLS: tuple[SampleWall, ...] = (
         key="bedroom-closet",
         room="Bedroom",
         label="Closet wall",
-        author="Homeowner",
+        author="Carpenter",
         observed_date=date(2025, 5, 15),
         coverage=Coverage.NONE,
         coverage_note=(
@@ -305,11 +311,16 @@ class SeedService:
         self._photos = photos
         self._storage = storage
 
-    def seed_sample_home(self) -> list[str]:
-        """Create or refresh every sample wall and photo. Returns the wall IDs touched."""
+    def seed_sample_home(self, owner_id: str, tradesperson_id: str) -> list[str]:
+        """Create or refresh a homeowner's sample walls and photos. Returns the wall IDs.
+
+        Every wall is recorded as added by ``tradesperson_id``, so that account sees them
+        under this homeowner as a client.
+        """
         ids: list[str] = []
         for sample in SAMPLE_WALLS:
-            photo_id = self._write_photo(sample) if sample.photo else None
+            created_by_id = tradesperson_id
+            photo_id = self._write_photo(sample, created_by_id) if sample.photo else None
             data = WallCreate(
                 room=sample.room,
                 label=sample.label,
@@ -323,22 +334,26 @@ class SeedService:
                 markers=list(sample.markers),
                 notes=sample.notes,
             )
-            wall = self._walls.upsert(sample.wall_id, data)
+            wall = self._walls.upsert(
+                sample.wall_id(owner_id), data, owner_id=owner_id, created_by_id=created_by_id
+            )
             ids.append(wall.id)
         return ids
 
-    def _write_photo(self, sample: SampleWall) -> str:
+    def _write_photo(self, sample: SampleWall, uploader_id: str) -> str:
         assert sample.photo is not None
+        photo_id = sample.photo_id(uploader_id)
         raw = load_sample_image(sample.photo)
-        processed = self._storage.save(sample.photo_id, raw)
+        processed = self._storage.save(photo_id, raw)
         self._photos.upsert(
-            photo_id=sample.photo_id,
+            photo_id=photo_id,
+            owner_id=uploader_id,
             content_type=JPEG_CONTENT_TYPE,
             width=processed.width,
             height=processed.height,
             size_bytes=len(processed.data),
         )
-        return sample.photo_id
+        return photo_id
 
 
 def load_sample_image(photo: SamplePhoto) -> bytes:

@@ -1,6 +1,6 @@
 import { apiUrl } from '@/api/client'
 
-export type ExportFormat = 'html' | 'json'
+export type ExportFormat = 'pdf' | 'html' | 'json'
 
 export const exportsApi = {
   url: (wallId: string, format: ExportFormat, download = false) =>

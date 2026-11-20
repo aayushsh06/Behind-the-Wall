@@ -1,62 +1,61 @@
 import { Button, ErrorMessage, PageHeader, SectionHeading } from '@/components/ui'
+import { HomeownerAccessSection, TradespersonAccessSection } from '@/features/settings/AccessSection'
 import { useApiHealth, useRecordStats } from '@/features/settings/useSettingsData'
 import { useLogout, useSignedInUser } from '@/hooks/useAuth'
-import { useSeedSampleHome } from '@/hooks/useSeedSampleHome'
 
 const ROLE_LABEL = { homeowner: 'Homeowner', tradesperson: 'Tradesperson' } as const
+const CARD = 'rounded-lg border border-line bg-surface p-4 shadow-card sm:p-5'
 
 export function SettingsPage() {
   const stats = useRecordStats()
   const health = useApiHealth()
-  const seed = useSeedSampleHome()
   const user = useSignedInUser()
   const logout = useLogout()
+  const isTrade = user.role === 'tradesperson'
 
   return (
     <>
-      <PageHeader title="Settings" />
-      <div className="flex flex-col gap-4">
-        <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+      <PageHeader title="Account" />
+      <div className="flex max-w-2xl flex-col gap-4">
+        <section className={CARD}>
           <SectionHeading aside={ROLE_LABEL[user.role]}>Account</SectionHeading>
           <p className="font-semibold">{user.name}</p>
           <p className="mb-3 text-sm text-fg-muted">{user.email}</p>
-          <Button variant="secondary" fullWidth loading={logout.isPending} onClick={() => logout.mutate()}>
-            Log out
+          <Button
+            variant="secondary"
+            className="w-full sm:w-auto"
+            loading={logout.isPending}
+            onClick={() => logout.mutate()}
+          >
+            Sign out
           </Button>
-          {logout.isError ? <div className="mt-2"><ErrorMessage error={logout.error} /></div> : null}
+          {logout.isError ? (
+            <div className="mt-2">
+              <ErrorMessage error={logout.error} />
+            </div>
+          ) : null}
         </section>
 
-        <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+        {isTrade ? <TradespersonAccessSection /> : <HomeownerAccessSection />}
+
+        <section className={CARD}>
           <SectionHeading>Records</SectionHeading>
           <dl className="grid grid-cols-2 gap-y-2 text-sm">
-            <dt className="text-fg-muted">Walls saved</dt>
+            <dt className="text-fg-muted">{isTrade ? 'Walls you can open' : 'Walls in your home'}</dt>
             <dd className="text-right font-semibold">{stats.isPending ? '…' : stats.total}</dd>
             <dt className="text-fg-muted">With photo</dt>
             <dd className="text-right font-semibold">{stats.isPending ? '…' : stats.withPhoto}</dd>
-            <dt className="text-fg-muted">API</dt>
+            <dt className="text-fg-muted">Server</dt>
             <dd className="flex items-center justify-end gap-1.5 text-right font-semibold">
               <span
-                className={`size-2 rounded-full ${health.isPending ? 'bg-fg-faint' : health.isSuccess ? 'bg-emerald-400' : 'bg-red-400'}`}
+                className={`size-2 rounded-full ${health.isPending ? 'bg-fg-faint' : health.isSuccess ? 'bg-green-600' : 'bg-red-600'}`}
               />
               {health.isPending ? '…' : health.isSuccess ? 'Connected' : 'Unreachable'}
             </dd>
           </dl>
         </section>
 
-        <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
-          <SectionHeading>Sample data</SectionHeading>
-          <p className="mb-3 text-sm leading-relaxed text-fg-muted">
-            Loads six labeled walls for usability sessions. Running it again resets those six walls without touching
-            others.
-          </p>
-          <Button variant="secondary" fullWidth loading={seed.isPending} onClick={() => seed.mutate()}>
-            Load sample home
-          </Button>
-          {seed.isSuccess ? <p className="mt-2 text-center text-sm text-emerald-300">Sample home loaded.</p> : null}
-          {seed.isError ? <div className="mt-2"><ErrorMessage error={seed.error} /></div> : null}
-        </section>
-
-        <p className="text-center text-xs text-fg-faint">Behind the Wall prototype · records stay on this server only.</p>
+        <p className="text-sm text-fg-faint">Records are stored on this server.</p>
       </div>
     </>
   )

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 
 import { routes } from '@/app/routes'
 import { Button, ErrorMessage, PageHeader, SectionHeading, TextField } from '@/components/ui'
+import { AuthCard } from '@/features/auth/AuthLayout'
 import { useLogin } from '@/hooks/useAuth'
 
 /** Matches the accounts created by the backend's demo seed (app/services/demo_accounts.py). */
@@ -24,8 +25,8 @@ export function LoginPage() {
   }
 
   return (
-    <>
-      <PageHeader title="Sign in" subtitle="Welcome back" backTo={routes.welcome()} />
+    <AuthCard>
+      <PageHeader title="Sign in" backTo={routes.welcome()} />
 
       <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
         <TextField
@@ -50,15 +51,15 @@ export function LoginPage() {
       </form>
 
       <p className="mt-5 text-center text-sm text-fg-muted">
-        New here?{' '}
-        <Link to={routes.register()} state={state} className="font-semibold text-accent">
+        Don’t have an account?{' '}
+        <Link to={routes.register()} state={state} className="font-medium text-accent hover:underline">
           Create an account
         </Link>
       </p>
 
-      <section className="mt-8 rounded-2xl border border-dashed border-line-strong bg-surface/50 p-4">
+      <section className="mt-8 border-t border-line pt-6">
         <SectionHeading>Demo accounts</SectionHeading>
-        <p className="mb-3 text-sm text-fg-muted">Both share the sample home. Tap one to fill in its details.</p>
+        <p className="mb-3 text-sm text-fg-muted">Both accounts share the same sample home. Select one to fill in the sign-in details.</p>
         <div className="flex flex-col gap-2">
           {DEMO_ACCOUNTS.map((account) => (
             <Button
@@ -77,6 +78,6 @@ export function LoginPage() {
           ))}
         </div>
       </section>
-    </>
+    </AuthCard>
   )
 }

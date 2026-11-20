@@ -99,7 +99,7 @@ export function PhotoCanvas({
       ref={surfaceRef}
       onClick={handleSurfaceClick}
       className={cn(
-        'relative w-full overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-line select-none',
+        'relative w-full overflow-hidden rounded-lg bg-surface-2 ring-1 ring-line select-none',
         editable && 'cursor-crosshair',
       )}
       style={{ aspectRatio }}

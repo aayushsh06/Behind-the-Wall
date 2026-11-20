@@ -40,8 +40,8 @@ export function DimensionsStep({ draft, dispatch, onBack, onNext }: DimensionsSt
         <>
           <p className="text-sm leading-relaxed text-fg-muted">
             Drag the handles to the <strong className="text-fg">top-left</strong> and{' '}
-            <strong className="text-fg">bottom-right</strong> corners of the wall, then enter its real size. The app
-            will work out where each item is.
+            <strong className="text-fg">bottom-right</strong> corners of the wall, then enter its real size. Each item’s
+            position will then be calculated from the photo.
           </p>
           <CalibrationEditor
             photo={photo}
@@ -52,7 +52,7 @@ export function DimensionsStep({ draft, dispatch, onBack, onNext }: DimensionsSt
             calibration={calibration}
             onChange={(changes) => dispatch({ type: 'setCalibrationSize', changes })}
           />
-          {error ? <p className="text-sm text-red-300">{error}</p> : null}
+          {error ? <p className="text-sm text-red-700">{error}</p> : null}
           <Button variant="ghost" onClick={() => dispatch({ type: 'setCalibration', calibration: null })}>
             Skip wall size
           </Button>

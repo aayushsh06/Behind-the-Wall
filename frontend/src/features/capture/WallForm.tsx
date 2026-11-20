@@ -10,6 +10,7 @@ import { useWallDraft } from '@/features/capture/useWallDraft'
 import type { WallDraft } from '@/features/capture/wallDraft'
 import { draftToInput } from '@/features/capture/wallDraft'
 import type { WallInput } from '@/domain/types'
+import type { Destination } from '@/features/capture/steps/DetailsStep'
 
 interface WallFormProps {
   initialDraft: WallDraft
@@ -17,11 +18,21 @@ interface WallFormProps {
   submitLabel: string
   submitting: boolean
   submitError: unknown
+  /** Set for tradespeople: which homeowner's account the wall goes into. */
+  destination?: Destination
   onSubmit: (input: WallInput, draft: WallDraft) => void
 }
 
 /** Three-step capture form shared by the new-wall and edit-wall pages. */
-export function WallForm({ initialDraft, knownRooms, submitLabel, submitting, submitError, onSubmit }: WallFormProps) {
+export function WallForm({
+  initialDraft,
+  knownRooms,
+  submitLabel,
+  submitting,
+  submitError,
+  destination,
+  onSubmit,
+}: WallFormProps) {
   const [draft, dispatch] = useWallDraft(initialDraft)
   const [step, setStep] = useState<CaptureStep>('photo')
 
@@ -49,6 +60,7 @@ export function WallForm({ initialDraft, knownRooms, submitLabel, submitting, su
           draft={draft}
           dispatch={dispatch}
           knownRooms={knownRooms}
+          destination={destination}
           onBack={() => setStep(draft.photo ? 'dimensions' : 'photo')}
           onNext={() => setStep('markers')}
         />

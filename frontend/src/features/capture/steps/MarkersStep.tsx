@@ -112,7 +112,7 @@ export function MarkersStep({ draft, dispatch, submitting, submitError, submitLa
         </Button>
       </div>
       {incomplete.length > 0 ? (
-        <p className="text-center text-xs text-amber-300">Add a measurement to every item before saving.</p>
+        <p className="text-center text-sm text-amber-800">Add a measurement to every item before saving.</p>
       ) : null}
 
       <BottomSheet

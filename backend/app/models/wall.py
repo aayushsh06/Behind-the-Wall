@@ -1,5 +1,11 @@
 """A single wall record with embedded markers.
 
+A wall lives in one homeowner's account (``owner_id``) and remembers which tradesperson
+recorded it (``created_by_id``). A wall sent to an email with no account yet waits with
+``owner_id`` empty and ``pending_owner_email`` set, and moves into the homeowner's account
+when they sign up with that email. ``revision`` counts saves, so each edit produces a
+visibly newer PDF.
+
 Markers are stored as a JSON array because a wall has a handful of them and they
 are always read and written together with the wall.
 """
@@ -7,10 +13,11 @@ are always read and written together with the wall.
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import JSON, Date, DateTime, ForeignKey, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import JSON, Date, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.models.user import User
 
 SCHEMA_VERSION = 2
 
@@ -19,6 +26,26 @@ class Wall(Base):
     __tablename__ = "walls"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    # The homeowner whose account the wall is in. Null while the wall waits for an invited
+    # homeowner to sign up, or on rows saved before accounts owned records.
+    owner_id: Mapped[str | None] = mapped_column(
+        String(32), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    # Email of an invited homeowner who has not signed up yet.
+    pending_owner_email: Mapped[str | None] = mapped_column(String(254), nullable=True, index=True)
+    # The tradesperson who recorded it.
+    created_by_id: Mapped[str | None] = mapped_column(
+        String(32), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    last_edited_by_id: Mapped[str | None] = mapped_column(
+        String(32), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    revision: Mapped[int] = mapped_column(Integer, default=1, server_default="1", nullable=False)
+    owner: Mapped[User | None] = relationship(foreign_keys=[owner_id], lazy="joined")
+    created_by: Mapped[User | None] = relationship(foreign_keys=[created_by_id], lazy="joined")
+    last_edited_by: Mapped[User | None] = relationship(
+        foreign_keys=[last_edited_by_id], lazy="joined"
+    )
     schema_version: Mapped[int] = mapped_column(default=SCHEMA_VERSION, nullable=False)
 
     room: Mapped[str] = mapped_column(String(120), nullable=False, index=True)

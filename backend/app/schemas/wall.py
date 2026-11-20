@@ -2,8 +2,9 @@
 
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.schemas.auth import Role
 from app.schemas.calibration import WallCalibration
 from app.schemas.common import Coverage, Region
 from app.schemas.marker import Marker
@@ -39,6 +40,37 @@ class WallCreate(WallBase):
     pass
 
 
+class WallCreateRequest(WallCreate):
+    """What a tradesperson sends to create a wall for a homeowner.
+
+    ``homeowner_email`` names the account the wall goes into. When no homeowner has
+    signed up with that email, ``invite`` must be true: the wall then waits for them
+    and moves into their account when they sign up.
+    """
+
+    homeowner_email: str = Field(min_length=3, max_length=254)
+    invite: bool = False
+
+    @field_validator("homeowner_email")
+    @classmethod
+    def _normalize_email(cls, value: str) -> str:
+        return value.strip().lower()
+
+    def to_create(self) -> WallCreate:
+        return WallCreate.model_validate(self.model_dump(exclude={"homeowner_email", "invite"}))
+
+
+class AccountBrief(BaseModel):
+    """Who a wall belongs to or was recorded by, as shown to the other party."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    email: str
+    role: Role
+
+
 class WallUpdate(WallBase):
     pass
 
@@ -48,6 +80,15 @@ class WallRead(WallBase):
 
     id: str
     schema_version: int
+    revision: int = 1
+    owner: AccountBrief | None = None
+    # Set while the wall waits for an invited homeowner to sign up.
+    pending_owner_email: str | None = None
+    created_by: AccountBrief | None = None
+    last_edited_by: AccountBrief | None = None
+    # What the signed-in account may do with this wall (filled in per request).
+    can_edit: bool = False
+    can_delete: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -65,4 +106,8 @@ class WallSummary(BaseModel):
     coverage: Coverage
     photo_id: str | None
     marker_count: int
+    revision: int = 1
+    owner: AccountBrief | None = None
+    pending_owner_email: str | None = None
+    created_by: AccountBrief | None = None
     updated_at: datetime

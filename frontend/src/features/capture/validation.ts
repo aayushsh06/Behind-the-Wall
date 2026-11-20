@@ -1,10 +1,28 @@
 import { isCalibrationValid } from '@/domain/geometry'
+import type { HomeownerStatus } from '@/domain/types'
 import type { WallDraft } from '@/features/capture/wallDraft'
 
-export type DetailsErrors = Partial<Record<'room' | 'label' | 'author' | 'observedDate', string>>
+export type DetailsErrors = Partial<Record<'room' | 'label' | 'author' | 'observedDate' | 'homeownerEmail', string>>
 
-export function validateDetails(draft: WallDraft): DetailsErrors {
+export const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+
+/**
+ * `homeownerStatus` is passed when a tradesperson is creating a wall: what the server
+ * said about the email entered (undefined while it hasn't been checked yet).
+ */
+export function validateDetails(draft: WallDraft, homeownerStatus?: HomeownerStatus | 'unchecked'): DetailsErrors {
   const errors: DetailsErrors = {}
+  if (homeownerStatus !== undefined) {
+    if (!EMAIL_PATTERN.test(draft.homeownerEmail.trim())) {
+      errors.homeownerEmail = "Enter the homeowner's email address"
+    } else if (homeownerStatus === 'not_a_homeowner') {
+      errors.homeownerEmail = 'That email belongs to a tradesperson account, not a homeowner'
+    } else if (homeownerStatus === 'not_registered' && !draft.inviteHomeowner) {
+      errors.homeownerEmail = 'No one has signed up with this email. Tick the box to invite them, or check the spelling'
+    } else if (homeownerStatus === 'unchecked') {
+      errors.homeownerEmail = 'Checking this email. Try again in a moment'
+    }
+  }
   if (!draft.room.trim()) errors.room = 'Room is required'
   if (!draft.label.trim()) errors.label = 'Wall label is required'
   if (!draft.author.trim()) errors.author = 'Author is required'

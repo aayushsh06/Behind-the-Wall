@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 
 import { routes } from '@/app/routes'
-import { Button, ErrorMessage, PageHeader, SegmentedControl, TextField } from '@/components/ui'
+import { Button, ErrorMessage, InfoBox, PageHeader, SegmentedControl, TextField } from '@/components/ui'
 import type { SegmentOption } from '@/components/ui'
 import type { Role } from '@/domain/types'
+import { AuthCard } from '@/features/auth/AuthLayout'
 import { useRegister } from '@/hooks/useAuth'
 
 const ROLE_OPTIONS: readonly SegmentOption<Role>[] = [
@@ -13,8 +14,8 @@ const ROLE_OPTIONS: readonly SegmentOption<Role>[] = [
 ]
 
 const ROLE_HINT: Record<Role, string> = {
-  homeowner: 'You keep the records for your home and share them when work is needed.',
-  tradesperson: 'You record walls while they are open and leave the record with the homeowner.',
+  homeowner: 'Tradespeople send the walls they record in your home to your account. You can open each one as a PDF.',
+  tradesperson: 'You record walls while they’re open and send them to each homeowner’s account using their email address.',
 }
 
 const MIN_PASSWORD = 8
@@ -38,9 +39,12 @@ export function RegisterPage() {
   const { state } = useLocation()
   const register = useRegister()
   const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
+  // Invitation links carry the invited email and role.
+  const [params] = useSearchParams()
+  const invitedEmail = params.get('email') ?? ''
+  const [email, setEmail] = useState(invitedEmail)
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<Role>('homeowner')
+  const [role, setRole] = useState<Role>(params.get('role') === 'tradesperson' ? 'tradesperson' : 'homeowner')
   const [errors, setErrors] = useState<Errors>({})
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -52,13 +56,22 @@ export function RegisterPage() {
   }
 
   return (
-    <>
-      <PageHeader title="Create account" subtitle="Keep your home's wall records in one place" backTo={routes.welcome()} />
+    <AuthCard>
+      <PageHeader title="Create an account" backTo={routes.welcome()} />
+
+      {invitedEmail ? (
+        <div className="mb-5">
+          <InfoBox>
+            A tradesperson sent you a wall record. Create your account with this email address and it will be waiting
+            for you.
+          </InfoBox>
+        </div>
+      ) : null}
 
       <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
         <div>
           <SegmentedControl label="I am a" options={ROLE_OPTIONS} value={role} onChange={setRole} />
-          <p className="mt-1.5 text-xs text-fg-faint">{ROLE_HINT[role]}</p>
+          <p className="mt-1.5 text-sm text-fg-muted">{ROLE_HINT[role]}</p>
         </div>
         <TextField
           label="Name"
@@ -94,10 +107,10 @@ export function RegisterPage() {
 
       <p className="mt-5 text-center text-sm text-fg-muted">
         Already have an account?{' '}
-        <Link to={routes.login()} state={state} className="font-semibold text-accent">
+        <Link to={routes.login()} state={state} className="font-medium text-accent hover:underline">
           Sign in
         </Link>
       </p>
-    </>
+    </AuthCard>
   )
 }

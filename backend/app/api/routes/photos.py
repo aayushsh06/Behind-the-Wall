@@ -1,10 +1,18 @@
-"""Upload and serve wall photos."""
+"""Upload and serve wall photos. See app/api/access.py for who can view a photo."""
 
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request, Response, UploadFile, status
 
-from app.api.deps import PhotoRepoDep, PhotoStorageDep, SettingsDep
+from app.api.access import photo_or_404, require_tradesperson
+from app.api.deps import (
+    CurrentUserDep,
+    PhotoRepoDep,
+    PhotoStorageDep,
+    SettingsDep,
+    ViewerDep,
+    WallRepoDep,
+)
 from app.core.ids import new_id
 from app.schemas import PhotoRead
 from app.services.photo_storage import JPEG_CONTENT_TYPE, InvalidImageError
@@ -14,8 +22,13 @@ router = APIRouter(prefix="/photos", tags=["photos"])
 
 @router.post("", response_model=PhotoRead, status_code=status.HTTP_201_CREATED)
 async def upload_photo(
-    file: UploadFile, photos: PhotoRepoDep, storage: PhotoStorageDep, settings: SettingsDep
+    file: UploadFile,
+    photos: PhotoRepoDep,
+    storage: PhotoStorageDep,
+    settings: SettingsDep,
+    user: CurrentUserDep,
 ) -> PhotoRead:
+    require_tradesperson(user)
     raw = await file.read(settings.max_upload_bytes + 1)
     if len(raw) > settings.max_upload_bytes:
         raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "Photo is too large")
@@ -30,6 +43,7 @@ async def upload_photo(
 
     photo = photos.create(
         photo_id=photo_id,
+        owner_id=user.id,
         content_type=JPEG_CONTENT_TYPE,
         width=processed.width,
         height=processed.height,
@@ -39,20 +53,41 @@ async def upload_photo(
 
 
 @router.get("/{photo_id}/meta", response_model=PhotoRead)
-def read_photo_meta(photo_id: str, photos: PhotoRepoDep) -> PhotoRead:
-    photo = photos.get(photo_id)
-    if photo is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Photo not found")
-    return PhotoRead.model_validate(photo)
+def read_photo_meta(
+    photo_id: str,
+    photos: PhotoRepoDep,
+    walls: WallRepoDep,
+    user: CurrentUserDep,
+    viewer: ViewerDep,
+) -> PhotoRead:
+    return PhotoRead.model_validate(photo_or_404(photos, walls, photo_id, user, viewer))
 
 
 @router.get("/{photo_id}")
-def read_photo(photo_id: str, request: Request, storage: PhotoStorageDep) -> Response:
+def read_photo(
+    photo_id: str,
+    request: Request,
+    photos: PhotoRepoDep,
+    walls: WallRepoDep,
+    storage: PhotoStorageDep,
+    user: CurrentUserDep,
+    viewer: ViewerDep,
+) -> Response:
+    photo_or_404(photos, walls, photo_id, user, viewer)
     return _image_response(request, storage.path_for(photo_id))
 
 
 @router.get("/{photo_id}/thumbnail")
-def read_thumbnail(photo_id: str, request: Request, storage: PhotoStorageDep) -> Response:
+def read_thumbnail(
+    photo_id: str,
+    request: Request,
+    photos: PhotoRepoDep,
+    walls: WallRepoDep,
+    storage: PhotoStorageDep,
+    user: CurrentUserDep,
+    viewer: ViewerDep,
+) -> Response:
+    photo_or_404(photos, walls, photo_id, user, viewer)
     thumb = storage.thumbnail_path_for(photo_id)
     return _image_response(request, thumb if thumb.exists() else storage.path_for(photo_id))
 
