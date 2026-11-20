@@ -63,6 +63,25 @@ because SQLite and photos need a disk that survives restarts.
 | `BTW_PUBLIC_URL` | your site's address | base of invitation links |
 | `BTW_SMTP_HOST`, `BTW_SMTP_PORT`, `BTW_SMTP_USERNAME`, `BTW_SMTP_PASSWORD`, `BTW_SMTP_FROM` | **required for real use** | confirmation and invitation emails. Without them, confirmation links are only written to the server log (fine for local development) |
 
+## Email
+
+Confirmation and invitation emails go out over SMTP. The project is set up for
+[Brevo](https://www.brevo.com/free-smtp-server/), whose free plan sends 300 emails a day
+and lets you send from a single verified address without owning a domain.
+
+1. Create a free Brevo account.
+2. **Senders, Domains & Dedicated IPs → Senders**: add and verify the address emails should
+   come from (Brevo emails it a confirmation link).
+3. **Settings → SMTP & API → SMTP**: note the *Login* and generate an *SMTP key*.
+4. Local development: copy `backend/.env.example` to `backend/.env` (git-ignored) and fill in
+   `BTW_SMTP_USERNAME`, `BTW_SMTP_PASSWORD` (the SMTP key) and `BTW_SMTP_FROM`.
+   On Render: set the same three, plus `BTW_PUBLIC_URL`, in the service's Environment tab.
+5. Check it: `cd backend && .venv/bin/python -m app.send_test_email you@example.com`
+
+Free-plan mail may carry Brevo branding, and new Brevo accounts can need a short review
+before sending is enabled. For better deliverability later, verify your own domain in Brevo
+(SPF/DKIM) and send from it.
+
 ## Checks
 
 ```
